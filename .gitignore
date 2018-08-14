@@ -123,3 +123,4 @@ files/
 build/
 *.dump
 *.core
+kernel/target/
