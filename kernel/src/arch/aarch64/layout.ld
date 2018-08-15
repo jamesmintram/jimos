@@ -12,7 +12,7 @@ SECTIONS {
   /* boot_end = (ADDR(.boot.text) + SIZEOF (.boot.text));  */
 
   kps_less1 = kernel_page_size -1;
-  kernel_physical_start = (boot_end + kps_less1) & ~kps_less1;
+  kernel_physical_start = (boot_end + kps_less1) & ~(kps_less1);
 
   /*-----------------------------------------------*/
   /* This is the bootstrap
