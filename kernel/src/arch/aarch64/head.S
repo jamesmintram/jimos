@@ -175,10 +175,6 @@ entered_1:
 
   //TODO: MAIR index - currently 0
 
-  // End of Physical RAM
-  ldr x23, =PHYSICAL_RAM
-  sub x23, x23, x21
-
  	// Index into the Section table
   mov x22, xzr
   //TODO: This assumes kernel starts at 2MB and pages are 2MB
@@ -192,22 +188,46 @@ entered_1:
   str x24, [x20]
   //---------------------------------------------
 
-  add x22, x22, #1              // We skip leave the first page unmapped
-
+  // Now we map the remainder contiguously
+  mov x22, #1                  // We skip leave the first page unmapped  
+  mov x23, #504                // 504th entry = start of MMIO
 
 1: str x21, [x20, x22, lsl #3]  // LSL makes each entry 1 << 3 or 8 bytes
   add x21, x21, SECTION_SIZE    // inc physical address
   add x22, x22, #1              // inc index
 
-  cmp x21, x23                  // are we at end?
+  cmp x22, x23                  // are we at end?
   b.ls 1b
 
-  //TODO: Setup MAIR registers
+  
+  // TODO: Need to map in the memory mapped IO registers
+  // Lets identity map the last 16MB of memory
+  ldr x21, =0x3F000000
+	orr x21, x21, MM_ACCESS
+	orr x21, x21, MM_BLOCK_DESCRIPTOR
+  //TODO: Setup MAIR reference
+
+  mov x22, #504
+  mov x23, #512
+
+1: str x21, [x20, x22, lsl #3]  // LSL makes each entry 1 << 3 or 8 bytes
+  add x21, x21, SECTION_SIZE    // inc physical address
+  add x22, x22, #1              // inc index
+
+  cmp x22, x23                  // are we at end?
+  b.ls 1b
+
+
+
+  //Setup MAIR registers
   mov x20, xzr
 
   //MT_DEVICE_NORMAL
-  mov x21, 0b01000100
-  orr x20, x20, x21 //, lsl #8  -- dont push this as all idx are 0
+  mov x21, 0b01000100       // 0x44
+  orr x20, x20, x21         // Mair IDX 0
+
+  mov x21, 0b00000100       //0x04
+  orr x20, x20, x21, lsl #8 // Mair IDX 1
 
 	msr mair_el1, x20
 
@@ -237,7 +257,6 @@ entered_1:
   ldr x0, =enter_virtual_addressing
 
   mrs x2, mair_el1
-
 
 	dsb ish
   isb

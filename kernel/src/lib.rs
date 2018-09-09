@@ -13,8 +13,8 @@ mod gpio;
 mod mailbox;
 mod panic;
 
-//use core::fmt;
-//  use core::fmt::Write;
+use core::fmt;
+use core::fmt::Write;
 
 pub use syscall::int_syscall;
 
@@ -31,12 +31,17 @@ pub unsafe extern "C" fn kmain()
     //TODO: Map the HardwareIO
     uart::uart_init();
 
+    write!(kwriter::WRITER, "UART init\n");
+
+    write!(kwriter::WRITER, "Building kernel page tables\n");
+
     // Create a new process
     // Schedule process
 
     // Call switch_task
 
-//    exit();
+    write!(kwriter::WRITER, "Exiting jimOS\n");
+    exit();
     //start_userspace();
 }
 

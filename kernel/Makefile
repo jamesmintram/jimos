@@ -16,7 +16,7 @@ RUST_RELEASE_LIB := $(RUST_BUILD_DIR)/release/lib$(RUST_BINARY).a
 
 RUST_DEPS = Xargo.toml Cargo.toml build.rs $(LD_LAYOUT) src/*
 # EXT_DEPS = $(BUILD_DIR)/crt0.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/head.o
-EXT_DEPS = $(BUILD_DIR)/*.o
+EXT_DEPS = $(BUILD_DIR)/head.o $(BUILD_DIR)/crt0.o $(BUILD_DIR)/exceptions.o
 
 BUILD_DIR := build
 KERNEL := $(BUILD_DIR)/$(RUST_BINARY)

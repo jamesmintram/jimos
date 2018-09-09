@@ -36,15 +36,12 @@ start_userspace:
   //orr x0, x0, #(1 << 9)     // Watchpoint, Breakpoint, and Software are masked
   msr spsr_el1, x0
 
-  // Drop down to EL1
+  // Drop down to EL0
   adr     x0, entered_0
   msr     elr_el1, x0
-
   eret
-
 entered_0:
- // b user_main
-
+  // b user_main
 
 __hang:
 	# wait forever in case of exit
@@ -53,7 +50,7 @@ __hang:
 
 .global exit
 exit:
-  b __hang
+  // b __hang
   mov w0, 0x18
   mov x1, #0x20000
   add x1, x1, #0x26
