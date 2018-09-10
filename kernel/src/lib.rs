@@ -3,33 +3,29 @@
 #![no_builtins]
 #![no_std]
 
+#[macro_use]
+extern crate bitflags;
+
 pub mod lang_items;
 
 mod memory;
-
 mod uart;
-//mod user;
 mod syscall;
 mod kwriter;
 mod gpio;
 mod mailbox;
 mod panic;
 
-//use core::fmt;
 use core::fmt::Write;
 
 use memory::FrameAllocator;
-
+use memory::paging::table::Table;
 
 pub use syscall::int_syscall;
 
-
-
 extern "C" {
-    //fn start_userspace();
     fn exit();
     static mut kernel_end: u8;
-    //static mut __tbss_end: u8;
 }
 
 //--------------------------------------------------------------------
@@ -59,32 +55,43 @@ pub unsafe extern "C" fn kmain()
             break;
         }
     }
+    
+    // Read our bootstrap page table
+    extern "C" {
+        static mut __page_tables_start: u8;
+    }   
+    let page_table_addr =  & __page_tables_start as *const _ as usize;
+    let page_table: *mut Table = page_table_addr as *mut _;
+
+    write!(kwriter::WRITER, "PGT 0x{:X?}\n", page_table_addr);
+
+    if let Some(table2) = (*page_table).next_table(0) {
+        write!(kwriter::WRITER, "Second: 0x{:X?}\n", table2.test_my_addr());
+        write!(kwriter::WRITER, "    -: 0x{:X?}\n", table2[0].uflags());
+
+        if let Some(table3) = table2.next_table(0) {
+
+            write!(kwriter::WRITER, "Third: 0x{:X?}\n", table3.test_my_addr());
+
+            for i in 0..10 {
+                if let Some(frame) = table3[i].pointed_frame() {
+
+                    write!(kwriter::WRITER, "    -: 0x{:X?} :: 0x{:X?}\n",  frame.start_address(), table3[i].uflags());    
+                }
+            }
+        }
+    }
+
+    //TODO:
+    //
+    //  Recreate identity map (into pre-allocated memory)
+    //  Update register to point to new map
+    //  Flush everything
+    //  Hopefully not data aborts
+    //  
 
     // Call switch_task
 
     write!(kwriter::WRITER, "Exiting jimOS\n");
     exit();
-    //start_userspace();
 }
-
-//------------------------------------------------------------------------
-//------------------------------------------------------------------------
-
-// #[no_mangle]
-// pub unsafe extern "C" fn user_main()
-// {
-//     //panic!();
-
-//     // User space code - need to move this into a separate context
-//     let result = user::syscall::syscall(user::SYS_WRITE);
-
-//     //user::print();
-
-//     write!(kwriter::WRITER, "Syscall result: {}\n", result == user::SYSCALL_OK);
-//     user::syscall::syscall(user::SYS_EXIT);
-// }
-
-//------------------------------------------------------------------------
-//------------------------------------------------------------------------
-
-//const STDOUT:       u32 = 0;

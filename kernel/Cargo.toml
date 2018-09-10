@@ -19,3 +19,4 @@ debug = true
 
 [dependencies]
 rlibc = "*"
+bitflags = "0.9.1"
