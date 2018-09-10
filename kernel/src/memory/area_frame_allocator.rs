@@ -12,7 +12,7 @@ impl AreaFrameAllocator {
     pub fn new(start_address: usize) -> AreaFrameAllocator {
         let first_frame = Frame::containing_address(start_address).number;
 
-        let mut allocator = AreaFrameAllocator {
+        let allocator = AreaFrameAllocator {
             next_free_frame: Frame{number: first_frame},
         };
         allocator
@@ -32,7 +32,7 @@ impl FrameAllocator for AreaFrameAllocator {
         return None
     }
 
-    fn deallocate_frame(&mut self, frame: Frame) {
+    fn deallocate_frame(&mut self, _frame: Frame) {
         // TODO (see below)
     }
 

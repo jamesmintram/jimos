@@ -15,7 +15,7 @@ mod gpio;
 mod mailbox;
 mod panic;
 
-use core::fmt;
+//use core::fmt;
 use core::fmt::Write;
 
 use memory::FrameAllocator;

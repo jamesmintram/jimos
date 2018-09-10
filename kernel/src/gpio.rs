@@ -1,3 +1,6 @@
+#[allow(dead_code)]
+pub mod consts
+{
 
 pub const MMIO_BASE: u32 = 0x3F000000;
 
@@ -34,3 +37,5 @@ pub const UART0_LCRH:   *mut u32 = (MMIO_BASE + 0x0020102C) as *mut u32;
 pub const UART0_CR:     *mut u32 = (MMIO_BASE + 0x00201030) as *mut u32;
 pub const UART0_IMSC:   *mut u32 = (MMIO_BASE + 0x00201038) as *mut u32;
 pub const UART0_ICR:    *mut u32 = (MMIO_BASE + 0x00201044) as *mut u32;
+
+}

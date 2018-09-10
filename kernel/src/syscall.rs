@@ -4,13 +4,15 @@ use core::fmt::Write;
 //TODO: Remove this later
 use uart;
 
-const SYSCALL_OK:   i32 = 0;
+
+//const SYSCALL_OK:   i32 = 0;
 
 const SYS_EXIT:     u32 = 100;
 const SYS_PRINT:    u32 = 101;
 const SYS_WRITE:    u32 = 102;
 
-const SYS_INVALID:  u32 = 1000;
+//const SYS_INVALID:  u32 = 1000;
+
 
 extern "C" {
     fn exit();

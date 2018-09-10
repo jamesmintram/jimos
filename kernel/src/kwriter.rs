@@ -17,8 +17,8 @@ impl fmt::Write for Writer {
     }
 }
 
-pub fn write_str(s: &str) {
-    for byte in s.bytes() {
-      uart::uart_send_byte(byte)
-    }
-}
+// pub fn write_str(s: &str) {
+//     for byte in s.bytes() {
+//       uart::uart_send_byte(byte)
+//     }
+// } 

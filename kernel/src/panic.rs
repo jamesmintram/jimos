@@ -6,7 +6,7 @@ use kwriter;
 use core::fmt::Write;
 
 // This function is called on panic.
-#[panic_implementation]
+#[panic_handler]
 pub fn panic_fmt(panic_info: &PanicInfo) -> !
 {
     write!(kwriter::WRITER,"\n\n");
