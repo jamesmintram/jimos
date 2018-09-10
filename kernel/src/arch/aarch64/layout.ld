@@ -6,7 +6,6 @@ MEMORY {
 SECTIONS {
   kernel_va_base = 0xFFFF000000000000;
   kernel_page_size = 2M;
-  test_export = 0xBEEF;
 
   kernel_first_page = kernel_va_base + kernel_page_size;
 
