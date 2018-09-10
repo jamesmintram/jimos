@@ -4,7 +4,9 @@
 #![no_std]
 
 pub mod lang_items;
+
 mod memory;
+
 mod uart;
 //mod user;
 mod syscall;
@@ -16,11 +18,18 @@ mod panic;
 use core::fmt;
 use core::fmt::Write;
 
+use memory::FrameAllocator;
+
+
 pub use syscall::int_syscall;
+
+
 
 extern "C" {
     //fn start_userspace();
     fn exit();
+    static mut kernel_end: u8;
+    //static mut __tbss_end: u8;
 }
 
 //--------------------------------------------------------------------
@@ -37,6 +46,19 @@ pub unsafe extern "C" fn kmain()
 
     // Create a new process
     // Schedule process
+
+    let kernel_end_addr =  & kernel_end as *const _ as usize;
+
+    write!(kwriter::WRITER, "Kernel ends at {}\n", kernel_end_addr);
+    
+    let mut frame_allocator = memory::AreaFrameAllocator::new(kernel_end_addr);
+
+    for i in 0.. {
+        if let None = frame_allocator.allocate_frame() {
+            write!(kwriter::WRITER, "allocated {} frames\n", i + 1);
+            break;
+        }
+    }
 
     // Call switch_task
 

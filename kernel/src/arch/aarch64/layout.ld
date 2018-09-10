@@ -6,6 +6,7 @@ MEMORY {
 SECTIONS {
   kernel_va_base = 0xFFFF000000000000;
   kernel_page_size = 2M;
+  test_export = 0xBEEF;
 
   kernel_first_page = kernel_va_base + kernel_page_size;
 
@@ -13,6 +14,9 @@ SECTIONS {
 
   kps_less1 = kernel_page_size -1;
   kernel_physical_start = (boot_end + kps_less1) & ~(kps_less1);
+  
+  /* Seems to give me what I need*/
+  kernel_end = LOADADDR(.bss) + SIZEOF(.bss);
 
   /*-----------------------------------------------*/
   /* This is the bootstrap
@@ -42,7 +46,6 @@ SECTIONS {
    __page_tables_size = __page_tables_end - __page_tables_start;
 
    boot_end = .;
-
   /* TODO Stick a constant in DATA for kernel physical start */
 
   /*-----------------------------------------------*/
@@ -80,7 +83,7 @@ SECTIONS {
     . += 0x10000;
     __cpu0_stack_end = .;
 
-    _end = .;
+    . = ALIGN(kernel_page_size);
   }
 
    __bss_dwords = (__bss_end - __bss_start) >> 3;
