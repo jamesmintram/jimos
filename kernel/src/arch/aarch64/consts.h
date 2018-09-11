@@ -2,8 +2,8 @@
 
 #define TABLE_SHIFT       9   //9 bits of address space per table (512 entries)
 #define PAGE_SHIFT        12  //4096 bytes per page - lower 12 bits
-#define SECTION_SHIFT     (PAGE_SHIFT + TABLE_SHIFT)  //Bits remaining for the offset within a 2MB section (21 for 2MB, 12 for 4k)
-#define SECTION_SIZE      (1 << SECTION_SHIFT)  //21 Bits of address = 2MB
+#define SECTION_SHIFT     PAGE_SHIFT  //Bits remaining for the offset within a 2MB section (21 for 2MB, 12 for 4k)
+#define SECTION_SIZE      (1 << SECTION_SHIFT)  //21 Bits of address = 2MB, 9 Bits of address = 4k
 
 #define PAGE_SIZE         0x1000
 #define TABLE_SIZE        0x1000

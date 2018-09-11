@@ -141,7 +141,6 @@ entered_1:
   //lsl x20, x20, PAGE_SHIFT
 
   // Set lower attribs
-
   // Set Block/Table
   orr x20, x20, MM_TABLE_DESCRIPTOR
 
@@ -158,64 +157,71 @@ entered_1:
 
   orr x20, x20, MM_TABLE_DESCRIPTOR
   str x20, [x21]
+  //-----------------------------
 
 
-  // Now we setup the 2MB entries
+
+  // Now we setup the L3 entries
 	//-----------------------------
-
-  // Base address of the Section table
-  adrp x20, __page_tables_start
+  adrp x20, __page_tables_start     // L3 Base pointer
   add x20, x20, TABLE_SIZE * 2
+ 
+  adrp x21, __page_tables_start     // L4[i] Table address
+  add x21, x21, TABLE_SIZE * 3
 
-  // Current Table Entry :: Physical address + flags
-  ldr x21, =kernel_physical_start
+	orr x21, x21, MM_TABLE_DESCRIPTOR
 
-	orr x21, x21, MM_ACCESS
-	orr x21, x21, MM_BLOCK_DESCRIPTOR
-
-  //TODO: MAIR index - currently 0
-
- 	// Index into the Section table
-  mov x22, xzr
-  //TODO: This assumes kernel starts at 2MB and pages are 2MB
-
-  //--------------------------------------------
-  // TODO: Make work
-  // TEMP: Experiment to identity map first page
-  ldr x24, =0x0
-	orr x24, x24, MM_ACCESS
-	orr x24, x24, MM_BLOCK_DESCRIPTOR
-  str x24, [x20]
-  //---------------------------------------------
-
-  // Now we map the remainder contiguously
-  mov x22, #1                  // We skip leave the first page unmapped  
-  mov x23, #504                // 504th entry = start of MMIO
-
-1: str x21, [x20, x22, lsl #3]  // LSL makes each entry 1 << 3 or 8 bytes
-  add x21, x21, SECTION_SIZE    // inc physical address
-  add x22, x22, #1              // inc index
-
-  cmp x22, x23                  // are we at end?
-  b.ls 1b
-
-  
-  // TODO: Need to map in the memory mapped IO registers
-  // Lets identity map the last 16MB of memory
-  ldr x21, =0x3F000000
-	orr x21, x21, MM_ACCESS
-	orr x21, x21, MM_BLOCK_DESCRIPTOR
-  //TODO: Setup MAIR reference
-
-  mov x22, #504
+  mov x22, #0   // Entry counter
   mov x23, #512
 
+1: str x21, [x20, x22, lsl #3]      // LSL makes each entry 1 << 3 or 8 bytes
+  add x21, x21, TABLE_SIZE          // inc physical address
+  add x22, x22, #1                  // inc index
+
+  cmp x22, x23                      // are we at end?
+  b.ls 1b
+//-----------------------------
+
+
+
+// Now we setup the L4 entries
+//-----------------------------
+
+  adrp x20, __page_tables_start     //L4[0] Base pointer
+  add x20, x20, TABLE_SIZE * 3
+
+  // Current Table Entry :: Physical address + flags
+  // ldr x21, =kernel_physical_start
+  mov x21, #0                       //Identity map the who range of memory
+
+	orr x21, x21, MM_ACCESS
+	orr x21, x21, MM_TABLE_DESCRIPTOR
+
+  ldr x23, =0x3EFFFFFF              // End of physical mapping
+  mov x22, #0                       // L4[i] Entry counter
+
+1: str x21, [x20, x22, lsl #3]      // LSL makes each entry 1 << 3 or 8 bytes
+   add x21, x21, SECTION_SIZE       // inc physical address
+   add x22, x22, #1                 // inc index
+
+   cmp x21, x23
+   b.ls 1b
+
+  // Change the flags for the last 16MB
+  ldr x21, =0x3F000000
+	orr x21, x21, MM_ACCESS
+	orr x21, x21, MM_TABLE_DESCRIPTOR
+  //TODO: Setup MAIR reference
+
+  ldr x23, =0x3FFFFFFF          // End of MMIO
+
 1: str x21, [x20, x22, lsl #3]  // LSL makes each entry 1 << 3 or 8 bytes
   add x21, x21, SECTION_SIZE    // inc physical address
   add x22, x22, #1              // inc index
 
-  cmp x22, x23                  // are we at end?
-  b.ls 1b
+  cmp x21, x23                  // are we at end?
+  b.le 1b
+//-----------------------------
 
 
 

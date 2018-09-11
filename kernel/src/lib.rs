@@ -19,7 +19,7 @@ mod panic;
 use core::fmt::Write;
 
 use memory::FrameAllocator;
-use memory::paging::table::Table;
+use memory::paging::table::{Table, Level4};
 
 pub use syscall::int_syscall;
 
@@ -61,26 +61,40 @@ pub unsafe extern "C" fn kmain()
         static mut __page_tables_start: u8;
     }   
     let page_table_addr =  & __page_tables_start as *const _ as usize;
-    let page_table: *mut Table = page_table_addr as *mut _;
+    let page_table_ptr: *mut Table<Level4> = page_table_addr as *mut _;
+    let page_table = &(*page_table_ptr);
+    
+    let p3 = page_table.next_table(42)
+      .and_then(|p3| p3.next_table(1337));
+      
 
-    write!(kwriter::WRITER, "PGT 0x{:X?}\n", page_table_addr);
+    let addr1 = memory::translate(page_table, 0x3EFFFFFF);
+    let addr2 = memory::translate(page_table, 0xBEEFDEADBEEF);
+    let addr3 = memory::translate(page_table, 0xDEADBEEF);
 
-    if let Some(table2) = (*page_table).next_table(0) {
-        write!(kwriter::WRITER, "Second: 0x{:X?}\n", table2.test_my_addr());
-        write!(kwriter::WRITER, "    -: 0x{:X?}\n", table2[0].uflags());
+    write!(kwriter::WRITER, "PGT 0x{:X?}\n", addr1);
 
-        if let Some(table3) = table2.next_table(0) {
+      //.and_then(|p1| p1.next_table(0xcafebabe));
 
-            write!(kwriter::WRITER, "Third: 0x{:X?}\n", table3.test_my_addr());
 
-            for i in 0..10 {
-                if let Some(frame) = table3[i].pointed_frame() {
+    // write!(kwriter::WRITER, "PGT 0x{:X?}\n", page_table_addr);
 
-                    write!(kwriter::WRITER, "    -: 0x{:X?} :: 0x{:X?}\n",  frame.start_address(), table3[i].uflags());    
-                }
-            }
-        }
-    }
+    // if let Some(table2) = (*page_table).next_table(0) {
+    //     write!(kwriter::WRITER, "Second: 0x{:X?}\n", table2.test_my_addr());
+    //     write!(kwriter::WRITER, "    -: 0x{:X?}\n", table2[0].uflags());
+
+    //     if let Some(table3) = table2.next_table(0) {
+
+    //         write!(kwriter::WRITER, "Third: 0x{:X?}\n", table3.test_my_addr());
+
+    //         for i in 0..10 {
+    //             if let Some(frame) = table3[i].pointed_frame() {
+
+    //                 write!(kwriter::WRITER, "    -: 0x{:X?} :: 0x{:X?}\n",  frame.start_address(), table3[i].uflags());    
+    //             }
+    //         }
+    //     }
+    // }
 
     //TODO:
     //

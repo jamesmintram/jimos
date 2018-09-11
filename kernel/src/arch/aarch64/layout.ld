@@ -5,15 +5,17 @@ MEMORY {
 
 SECTIONS {
   kernel_va_base = 0xFFFF000000000000;
-  kernel_page_size = 2M;
+  kernel_page_size = 4K;
 
-  kernel_first_page = kernel_va_base + kernel_page_size;
+  
 
   /* boot_end = (ADDR(.boot.text) + SIZEOF (.boot.text));  */
 
   kps_less1 = kernel_page_size -1;
   kernel_physical_start = (boot_end + kps_less1) & ~(kps_less1);
   
+  kernel_first_page = kernel_va_base + kernel_physical_start;
+
   /* Seems to give me what I need*/
   kernel_end = LOADADDR(.bss) + SIZEOF(.bss);
 
@@ -40,9 +42,10 @@ SECTIONS {
   /* Data for page tables */
    . = ALIGN(0x1000);
    __page_tables_start = .;
-   .data.pgd : { . += (3 * 0x1000); }
+   .data.pgd : { . += ((3 + 512) * 0x1000); }
    __page_tables_end = .;
-   __page_tables_size = __page_tables_end - __page_tables_start;
+   /* NOTE: Weird that it worked without -1 and now needs it */
+   __page_tables_size = __page_tables_end - __page_tables_start -1;
 
    boot_end = .;
   /* TODO Stick a constant in DATA for kernel physical start */

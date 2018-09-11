@@ -2,6 +2,11 @@ mod area_frame_allocator;
 pub mod paging;
 
 use self::paging::PhysicalAddress;
+use self::paging::VirtualAddress;
+
+use self::paging::table::{Table, Level4};
+use self::paging::Page;
+use self::paging::translate_page;
 
 pub use self::area_frame_allocator::AreaFrameAllocator;
 
@@ -28,4 +33,16 @@ impl Frame {
 pub trait FrameAllocator {
     fn allocate_frame(&mut self) -> Option<Frame>;
     fn deallocate_frame(&mut self, frame: Frame);
+}
+
+
+
+pub fn translate(
+    page_table: &Table<Level4>, 
+    virtual_address: VirtualAddress) -> Option<PhysicalAddress>
+{
+    let offset = virtual_address % PAGE_SIZE;
+    translate_page(page_table, Page::containing_address(virtual_address))
+        //.map(|frame| frame.number * PAGE_SIZE + offset)
+        .map(|frame| frame.number)
 }
