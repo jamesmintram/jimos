@@ -70,11 +70,17 @@ pub unsafe extern "C" fn kmain()
 
     let addr1 = memory::translate(page_table, 0x3EFFFFFF);
     let addr2 = memory::translate(page_table, 0x3EADBEEF);
-    let addr3 = memory::translate(page_table, 0xDEADBEEF);
+    //let addr3 = memory::translate(page_table, 0xDEADBEEF);
 
     write!(kwriter::WRITER, "PGT 0x{:X?}\n", addr2);
 
-      //.and_then(|p1| p1.next_table(0xcafebabe));
+    let kern = memory::physical_to_kernel(0xDEADBEEF);
+    let phys = memory::kernel_to_physical(kern);
+
+    write!(kwriter::WRITER, "KERN 0x{:X?}\n", kern);
+    write!(kwriter::WRITER, "PHYS 0x{:X?}\n", phys);
+
+    //.and_then(|p1| p1.next_table(0xcafebabe));
 
 
     // write!(kwriter::WRITER, "PGT 0x{:X?}\n", page_table_addr);

@@ -1,5 +1,8 @@
+use memory::physical_to_kernel;
+
 use memory::paging::entry::*;
 use memory::paging::ENTRY_COUNT;
+
 use core::marker::PhantomData;
 
 pub trait TableLevel {}
@@ -50,9 +53,12 @@ impl<L> Table<L> where L: TableLevel {
 impl<L> Table<L> where L: HierarchicalLevel {
     pub fn next_table_address(&self, index: usize) -> Option<usize> {
         let entry_flags = self[index].flags();
+
         if entry_flags.contains(PRESENT) { 
-            let table_address = self[index].test() & 0x000fffff_fffff00;
-            Some(table_address)
+            let table_address = self[index].test();
+            let kernel_address = physical_to_kernel(table_address);
+
+            Some(kernel_address)
         } else {
             None
         }

@@ -24,6 +24,7 @@ impl Page {
                                     └── bit 47
         */
         //TODO: Assert that the VirtualAddress is 4k page aligned
+
         Page{number: address / PAGE_SIZE}
     }
 
