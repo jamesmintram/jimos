@@ -1,13 +1,17 @@
+
+
 #[allow(dead_code)]
 pub mod consts
 {
 
-pub const MMIO_BASE: u32 = 0x3F000000;
+use memory;
+
+pub const MMIO_BASE: usize = memory::KERNEL_ADDRESS_START | 0x3F000000;
 
 // GPIO
 //--------------------------------------------------------------------
 
-pub const GPIO_BASE: u32 = MMIO_BASE + 0x200000;
+pub const GPIO_BASE: usize = MMIO_BASE + 0x200000;
 
 pub const GPFSEL0:     *mut u32 = (GPIO_BASE+0x00) as *mut u32;
 pub const GPFSEL1:     *mut u32 = (GPIO_BASE+0x04) as *mut u32;

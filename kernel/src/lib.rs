@@ -60,7 +60,7 @@ pub unsafe extern "C" fn kmain()
     extern "C" {
         static mut __page_tables_start: u8;
     }   
-    let page_table_addr =  & __page_tables_start as *const _ as usize;
+    let page_table_addr =  (& __page_tables_start as *const _ as usize) | memory::KERNEL_ADDRESS_START;
     let page_table_ptr: *mut Table<Level4> = page_table_addr as *mut _;
     let page_table = &(*page_table_ptr);
     
@@ -72,13 +72,19 @@ pub unsafe extern "C" fn kmain()
     let addr2 = memory::translate(page_table, 0x3EADBEEF);
     //let addr3 = memory::translate(page_table, 0xDEADBEEF);
 
-    write!(kwriter::WRITER, "PGT 0x{:X?}\n", addr2);
+
+    write!(kwriter::WRITER, "PGT 0x{:X?}\n", memory::PAGE_MASK);
+    write!(kwriter::WRITER, "ADDR 0x{:X?}\n", addr2);
+
+
+    //TODO: Clear out the user
 
     let kern = memory::physical_to_kernel(0xDEADBEEF);
     let phys = memory::kernel_to_physical(kern);
 
     write!(kwriter::WRITER, "KERN 0x{:X?}\n", kern);
     write!(kwriter::WRITER, "PHYS 0x{:X?}\n", phys);
+
 
     //.and_then(|p1| p1.next_table(0xcafebabe));
 

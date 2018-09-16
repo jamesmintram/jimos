@@ -1,5 +1,6 @@
 use memory::physical_to_kernel;
 
+use memory;
 use memory::paging::entry::*;
 use memory::paging::ENTRY_COUNT;
 
@@ -55,7 +56,7 @@ impl<L> Table<L> where L: HierarchicalLevel {
         let entry_flags = self[index].flags();
 
         if entry_flags.contains(PRESENT) { 
-            let table_address = self[index].test();
+            let table_address = self[index].test() & memory::PAGE_MASK;
             let kernel_address = physical_to_kernel(table_address);
 
             Some(kernel_address)

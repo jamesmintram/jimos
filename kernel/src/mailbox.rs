@@ -46,7 +46,7 @@ pub mod consts
  // Private mailbox
 //--------------------------------------------------------------------
 
-const VIDEOCORE_MBOX: u32 = gpio::consts::MMIO_BASE+0x0000B880;
+const VIDEOCORE_MBOX: usize = gpio::consts::MMIO_BASE+0x0000B880;
 const MBOX_READ:   *mut u32 = (VIDEOCORE_MBOX + 0x00) as *mut u32;
 //const MBOX_POLL:   *mut u32 = (VIDEOCORE_MBOX + 0x10) as *mut u32;
 //const MBOX_SENDER: *mut u32 = (VIDEOCORE_MBOX + 0x14) as *mut u32;

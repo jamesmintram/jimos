@@ -19,6 +19,8 @@ pub const KERNEL_ADDRESS_START: usize = 0xFFFF0000_00000000;
 pub const KERNEL_ADDRESS_MASK: usize = !KERNEL_ADDRESS_START;
 
 pub const PAGE_SIZE: usize = 4096;
+pub const PAGE_MASK: usize = !(PAGE_SIZE -1);
+
 pub const TOTAL_MEMORY: usize = 0x3EFFFFFF;
 pub const TOTAL_PAGE_FRAMES: usize = TOTAL_MEMORY / PAGE_SIZE;
 
@@ -55,5 +57,5 @@ pub fn translate(
 {
      let offset = virtual_address % PAGE_SIZE;
      translate_page(page_table, Page::containing_address(virtual_address))
-         .map(|frame| frame.number * PAGE_SIZE + offset)
+         .map(|frame| frame.number)// * PAGE_SIZE + offset)
 }
