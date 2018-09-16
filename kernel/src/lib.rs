@@ -69,10 +69,10 @@ pub unsafe extern "C" fn kmain()
       
 
     let addr1 = memory::translate(page_table, 0x3EFFFFFF);
-    let addr2 = memory::translate(page_table, 0xBEEFDEADBEEF);
+    let addr2 = memory::translate(page_table, 0x3EADBEEF);
     let addr3 = memory::translate(page_table, 0xDEADBEEF);
 
-    write!(kwriter::WRITER, "PGT 0x{:X?}\n", addr1);
+    write!(kwriter::WRITER, "PGT 0x{:X?}\n", addr2);
 
       //.and_then(|p1| p1.next_table(0xcafebabe));
 

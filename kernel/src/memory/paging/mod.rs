@@ -23,6 +23,7 @@ impl Page {
             valid address:   0xffff_8000_0000_0000
                                     └── bit 47
         */
+        //TODO: Assert that the VirtualAddress is 4k page aligned
         Page{number: address / PAGE_SIZE}
     }
 
@@ -48,22 +49,8 @@ pub fn translate_page(
     page_table: &Table<Level4>, 
     page: Page) -> Option<Frame> 
 {
-    Some(Frame{number: page.number})
-    //use self::entry::HUGE_PAGE;
-
-    // let p3 = page_table.next_table(page.p4_index());
-
-    // p3.and_then(|p3| p3.next_table(page.p3_index()))    
-    //     // This for now as we only have Large Pages
-    //     .and_then(|p2| Some(Frame{number: page.p2_index()}))    
-    //     //.and_then(|p2| p2[page.p2_index()].pointed_frame())
-    //     .or_else(|| {
-    //         p3.and_then(|p3| {
-    //             Some(Frame{number: 2})    
-    //         })            
-    //     })
-
-    // Reinstate
-    //.and_then(|p2| p2.next_table(page.p2_index()))
-    //.and_then(|p1| Some(Frame{number: page.p1_index()}))
+    page_table.next_table(page.p4_index())
+    .and_then(|p3| p3.next_table(page.p3_index()))
+    .and_then(|p2| p2.next_table(page.p2_index()))
+    .and_then(|p1| p1[page.p1_index()].pointed_frame())
 }
