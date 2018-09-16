@@ -1,6 +1,8 @@
 pub mod entry;
 pub mod table;
 
+use memory::KERNEL_ADDRESS_START;
+use memory::USER_ADDRESS_END;
 use memory::PAGE_SIZE; 
 use memory::Frame;
 
@@ -17,14 +19,7 @@ pub struct Page {
 
 impl Page {
     pub fn containing_address(address: VirtualAddress) -> Page {
-        //TODO: Add an assert here based on AARCH64 valid addresses
-        /*
-            invalid address: 0x0000_8000_0000_0000
-            valid address:   0xffff_8000_0000_0000
-                                    └── bit 47
-        */
-        //TODO: Assert that the VirtualAddress is 4k page aligned
-
+        assert!(address <= USER_ADDRESS_END || address >= KERNEL_ADDRESS_START, "Invalid address");
         Page{number: address / PAGE_SIZE}
     }
 

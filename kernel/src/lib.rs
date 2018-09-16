@@ -56,35 +56,49 @@ pub unsafe extern "C" fn kmain()
         }
     }
     
+    //Turn off identity mapping!
+    memory::clear_el0();
+
+    //Setup "proper" Kernel Page Table
+    //Unmap all pages above the kernel_end_addr
+    
+
+    //Map some memory
+    // Create 2 user space page tables
+    // Map same VA to different page frames
+    // Test that we are actually writing to different memory
+    // Map another VA to alias a page frame
+    // Test that different addresses can access same memory
+    // Unmap memory
+    // Test data abort
+
+
+
     // Read our bootstrap page table
     extern "C" {
         static mut __page_tables_start: u8;
     }   
+
     let page_table_addr =  (& __page_tables_start as *const _ as usize) | memory::KERNEL_ADDRESS_START;
     let page_table_ptr: *mut Table<Level4> = page_table_addr as *mut _;
     let page_table = &(*page_table_ptr);
     
     let p3 = page_table.next_table(42)
       .and_then(|p3| p3.next_table(1337));
-      
 
-    let addr1 = memory::translate(page_table, 0x3EFFFFFF);
-    let addr2 = memory::translate(page_table, 0x3EADBEEF);
-    //let addr3 = memory::translate(page_table, 0xDEADBEEF);
+    let addr1 = memory::virtual_to_physical(page_table, memory::KERNEL_ADDRESS_START);
+    let addr2 = memory::virtual_to_physical(page_table, 0x3EADBEEF);
+    //let addr3 = memory::virtual_to_physical(page_table, 0xDEADBEEF);
 
 
     write!(kwriter::WRITER, "PGT 0x{:X?}\n", memory::PAGE_MASK);
     write!(kwriter::WRITER, "ADDR 0x{:X?}\n", addr2);
-
-
-    //TODO: Clear out the user
 
     let kern = memory::physical_to_kernel(0xDEADBEEF);
     let phys = memory::kernel_to_physical(kern);
 
     write!(kwriter::WRITER, "KERN 0x{:X?}\n", kern);
     write!(kwriter::WRITER, "PHYS 0x{:X?}\n", phys);
-
 
     //.and_then(|p1| p1.next_table(0xcafebabe));
 
