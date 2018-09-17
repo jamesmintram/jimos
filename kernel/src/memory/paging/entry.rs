@@ -1,10 +1,9 @@
 use memory::Frame; 
 use memory::PAGE_SIZE;
 use memory::ADDRESS_MASK;
+use memory::ADDRESS_FLAGS_MASK;
 
 pub struct Entry(u64);
-
-pub const FLAGS_MASK: u64 = 0x00000000_00000FFF;
 
 bitflags! {
     pub struct EntryFlags: u64 {
@@ -31,7 +30,7 @@ impl Entry {
     }
 
     pub fn uflags(&self) -> u64 {
-        self.0 & FLAGS_MASK
+        self.0 & ADDRESS_FLAGS_MASK
     }
 
     // Only makes sense in the final table (TODO: Update with proper name from arm doc)

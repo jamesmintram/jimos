@@ -27,6 +27,7 @@ pub const PAGE_MASK: usize = !(PAGE_SIZE -1);
 pub const ADDRESS_MASK: usize = 0x0000FFFF_FFFFF000;
 pub const INV_ADDRESS_MASK: usize = !ADDRESS_MASK;
 
+pub const ADDRESS_FLAGS_MASK: u64 = 0x00000000_00000FFF;
 
 pub const TOTAL_MEMORY: usize = 0x3EFFFFFF;
 pub const TOTAL_PAGE_FRAMES: usize = TOTAL_MEMORY / PAGE_SIZE;
