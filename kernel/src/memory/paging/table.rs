@@ -1,6 +1,7 @@
+use memory;
+use memory::FrameAllocator;
 use memory::physical_to_kernel;
 
-use memory;
 use memory::paging::entry::*;
 use memory::paging::ENTRY_COUNT;
 
@@ -46,9 +47,7 @@ impl<L> Table<L> where L: TableLevel {
         }
     }
 
-    pub fn test_my_addr(&self) -> usize {
-        return self as *const _ as usize;
-    }
+    
 }
 
 impl<L> Table<L> where L: HierarchicalLevel {
@@ -70,9 +69,35 @@ impl<L> Table<L> where L: HierarchicalLevel {
             .map(|address| unsafe { &*(address as *const _) })
     }
 
-    pub fn next_table_mut(&mut self, index: usize) -> Option<&mut Table<L::NextLevel>> {
+    pub fn next_table_mut(
+        &mut self, 
+        index: usize) -> Option<&mut Table<L::NextLevel>> 
+    {
         self.next_table_address(index)
-        .map(|address| unsafe { &mut *(address as *mut _) })
+            .map(|address| unsafe { &mut *(address as *mut _) })
+    }
+
+    pub fn next_table_create<A>(
+        &mut self,
+        index: usize,
+        allocator: &mut A) -> &mut Table<L::NextLevel>
+            where A: FrameAllocator
+    {
+        if self.next_table(index).is_none() {
+            
+            let frame = allocator
+                .allocate_frame()
+                .expect("no frames available");
+
+            self.entries[index]
+                .set(frame, PRESENT | TABLE_DESCRIPTOR);
+
+            self.next_table_mut(index)
+                .unwrap()
+                .zero();
+        }
+        self.next_table_mut(index)
+            .unwrap()
     }
 }
 

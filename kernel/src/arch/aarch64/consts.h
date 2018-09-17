@@ -8,9 +8,9 @@
 #define PAGE_SIZE         0x1000
 #define TABLE_SIZE        0x1000
 
-#define PTRS_PER_TABLE    (1 << 9)
+#define PTRS_PER_TABLE          (1 << 9)
 
-#define MM_ACCESS			(0x1 << 10)
+#define MM_ACCESS			    (0x1 << 10)
 #define MM_ACCESS_PERMISSION	(0x01 << 6)
 
 #define MM_BLOCK_DESCRIPTOR  0b01

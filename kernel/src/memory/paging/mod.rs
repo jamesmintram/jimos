@@ -5,6 +5,9 @@ use memory::KERNEL_ADDRESS_START;
 use memory::USER_ADDRESS_END;
 use memory::PAGE_SIZE; 
 use memory::Frame;
+use memory::FrameAllocator;
+
+pub use self::entry::*;
 
 const ENTRY_COUNT: usize = 512;
 
@@ -49,4 +52,32 @@ pub fn translate_page(
     .and_then(|p3| p3.next_table(page.p3_index()))
     .and_then(|p2| p2.next_table(page.p2_index()))
     .and_then(|p1| p1[page.p1_index()].pointed_frame())
+}
+
+pub fn map_to<A>(
+    page_table: &mut Table<Level4>,
+    page: Page,
+    frame: Frame, 
+    flags: EntryFlags, 
+    allocator: &mut A) where A: FrameAllocator
+{
+    // write!(kwriter::WRITER, "P3 [P4 Index: {:X?}]\n", page.p4_index());
+    let p3 = page_table.next_table_create(page.p4_index(), allocator);
+
+    // write!(kwriter::WRITER, "P2 [P3 Index: {}]\n", page.p3_index());
+    let p2 = p3.next_table_create(page.p3_index(), allocator);
+
+    // write!(kwriter::WRITER, "P1 [P2 Index: {}]\n", page.p2_index());
+    let p1 = p2.next_table_create(page.p2_index(), allocator);
+
+    assert!(p1[page.p1_index()].is_unused());
+    
+    // write!(kwriter::WRITER, "VA [P1 Index: {}]\n", page.p1_index());
+    // let new_flags = flags | PRESENT | ACCESS | TABLE_DESCRIPTOR;
+    // let new =  (frame.start_address() as u64) | new_flags.bits();
+
+
+    // write!(kwriter::WRITER, "CURRENT: {:X?}\n", p1[page.p1_index()].test());
+    // write!(kwriter::WRITER, "NEW: {:X?}\n", new);
+    p1[page.p1_index()].set(frame, flags | PRESENT | ACCESS | TABLE_DESCRIPTOR);
 }

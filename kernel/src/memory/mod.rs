@@ -20,19 +20,25 @@ pub const USER_ADDRESS_END: usize = 0x0000FFFF_FFFFFFFF;
 pub const KERNEL_ADDRESS_START: usize = 0xFFFF0000_00000000;
 pub const KERNEL_ADDRESS_MASK: usize = !KERNEL_ADDRESS_START;
 
-pub const PAGE_SIZE: usize = 4096;
+pub const PAGE_SHIFT: usize = 12;
+pub const PAGE_SIZE: usize = 1 << PAGE_SHIFT;
 pub const PAGE_MASK: usize = !(PAGE_SIZE -1);
+
+pub const ADDRESS_MASK: usize = KERNEL_ADDRESS_MASK & PAGE_MASK;
 
 pub const TOTAL_MEMORY: usize = 0x3EFFFFFF;
 pub const TOTAL_PAGE_FRAMES: usize = TOTAL_MEMORY / PAGE_SIZE;
 
 impl Frame {
     fn containing_address(address: usize) -> Frame {
-        Frame{ number: address / PAGE_SIZE }
+        let masked_address = address & ADDRESS_MASK;
+        let number = masked_address >> PAGE_SHIFT;
+
+        Frame{ number: number }
     }   
 
     pub fn start_address(&self) -> PhysicalAddress {
-        self.number * PAGE_SIZE
+        self.number << PAGE_SHIFT
     }
 }
 
@@ -67,9 +73,19 @@ pub fn clear_el0()
     unsafe {
         asm!("
             msr ttbr0_el1, xzr
+        "::);
+    };
+
+    flush_tlb();
+}
+
+pub fn flush_tlb()
+{
+    unsafe {
+        asm!("
+            TLBI VMALLE1
             dsb ish
             isb
         "::);
-    }
-
+    };
 }

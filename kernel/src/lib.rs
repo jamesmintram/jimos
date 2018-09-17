@@ -11,15 +11,17 @@ pub mod lang_items;
 mod memory;
 mod uart;
 mod syscall;
-mod kwriter;
 mod gpio;
 mod mailbox;
 mod panic;
 
+mod kwriter;
 use core::fmt::Write;
 
 use memory::FrameAllocator;
 use memory::paging::table::{Table, Level4};
+use memory::paging::Page;
+use memory::paging::entry::EntryFlags;
 
 pub use syscall::int_syscall;
 
@@ -43,25 +45,20 @@ pub unsafe extern "C" fn kmain()
     // Create a new process
     // Schedule process
 
-    let kernel_end_addr =  & kernel_end as *const _ as usize;
+    let kernel_end_addr =  (&kernel_end as *const _) as usize;
 
     write!(kwriter::WRITER, "Kernel ends at {}\n", kernel_end_addr);
     
-    let mut frame_allocator = memory::AreaFrameAllocator::new(kernel_end_addr);
+    let mut frame_allocator 
+        = memory::AreaFrameAllocator::new(kernel_end_addr);
 
-    for i in 0.. {
-        if let None = frame_allocator.allocate_frame() {
-            write!(kwriter::WRITER, "allocated {} frames\n", i + 1);
-            break;
-        }
-    }
-    
     //Turn off identity mapping!
     memory::clear_el0();
 
     //Setup "proper" Kernel Page Table
     //Unmap all pages above the kernel_end_addr
     
+ 
 
     //Map some memory
     // Create 2 user space page tables
@@ -81,12 +78,9 @@ pub unsafe extern "C" fn kmain()
 
     let page_table_addr =  (& __page_tables_start as *const _ as usize) | memory::KERNEL_ADDRESS_START;
     let page_table_ptr: *mut Table<Level4> = page_table_addr as *mut _;
-    let page_table = &(*page_table_ptr);
-    
-    let p3 = page_table.next_table(42)
-      .and_then(|p3| p3.next_table(1337));
+    let page_table = &mut (*page_table_ptr);
 
-    let addr1 = memory::virtual_to_physical(page_table, memory::KERNEL_ADDRESS_START);
+    let _addr1 = memory::virtual_to_physical(page_table, memory::KERNEL_ADDRESS_START);
     let addr2 = memory::virtual_to_physical(page_table, 0x3EADBEEF);
     //let addr3 = memory::virtual_to_physical(page_table, 0xDEADBEEF);
 
@@ -100,37 +94,64 @@ pub unsafe extern "C" fn kmain()
     write!(kwriter::WRITER, "KERN 0x{:X?}\n", kern);
     write!(kwriter::WRITER, "PHYS 0x{:X?}\n", phys);
 
-    //.and_then(|p1| p1.next_table(0xcafebabe));
+    //------------------------------------------------
 
+    //TODO: This should be all fixed up to use UserAddress or KernelAddress
+    let addr = memory::physical_to_kernel(42 * 512 * 512 * 4096); // 42th P3 entry
+    let page = Page::containing_address(addr);
+    let frame = frame_allocator
+        .allocate_frame()
+        .expect("no more frames");
 
-    // write!(kwriter::WRITER, "PGT 0x{:X?}\n", page_table_addr);
+    write!(kwriter::WRITER, "Frame start address: {:X?}\n", frame.start_address());
 
-    // if let Some(table2) = (*page_table).next_table(0) {
-    //     write!(kwriter::WRITER, "Second: 0x{:X?}\n", table2.test_my_addr());
-    //     write!(kwriter::WRITER, "    -: 0x{:X?}\n", table2[0].uflags());
+    write!(kwriter::WRITER, "Mapping: {:X?}\n", addr);
 
-    //     if let Some(table3) = table2.next_table(0) {
+    write!(kwriter::WRITER, "None = {:?}, map to {:?}\n",
+            memory::virtual_to_physical(page_table, addr),
+            frame);
+    
+    memory::paging::map_to(
+        page_table, 
+        page, 
+        frame, 
+        EntryFlags::empty(), 
+        &mut frame_allocator);
 
-    //         write!(kwriter::WRITER, "Third: 0x{:X?}\n", table3.test_my_addr());
+    write!(
+        kwriter::WRITER, 
+        "Some = {:?}\n", 
+        memory::virtual_to_physical(page_table, addr));
 
-    //         for i in 0..10 {
-    //             if let Some(frame) = table3[i].pointed_frame() {
+    write!(
+        kwriter::WRITER, 
+        "next free frame: {:?}\n", 
+        frame_allocator.allocate_frame());
 
-    //                 write!(kwriter::WRITER, "    -: 0x{:X?} :: 0x{:X?}\n",  frame.start_address(), table3[i].uflags());    
-    //             }
-    //         }
-    //     }
-    // }
+    memory::flush_tlb();
 
-    //TODO:
-    //
-    //  Recreate identity map (into pre-allocated memory)
-    //  Update register to point to new map
-    //  Flush everything
-    //  Hopefully not data aborts
-    //  
+    let pgt : *const usize = memory::physical_to_kernel(0x29D000) as *const usize;
+    write!(
+        kwriter::WRITER, 
+        "Data at PGT: 0x{:X?}\n", 
+        *pgt);
 
-    // Call switch_task
+    // TODO: Test out the mapping
+    
+
+    let data : *mut usize = addr as *mut usize;
+
+    write!(
+        kwriter::WRITER, 
+        "Data at data: 0x{:X?}\n", 
+        *data);
+
+    *data = 1024;
+
+    write!(
+        kwriter::WRITER, 
+        "Data at data: 0x{:X?}\n", 
+        *data);
 
     write!(kwriter::WRITER, "Exiting jimOS\n");
     exit();
