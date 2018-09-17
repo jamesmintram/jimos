@@ -24,7 +24,9 @@ pub const PAGE_SHIFT: usize = 12;
 pub const PAGE_SIZE: usize = 1 << PAGE_SHIFT;
 pub const PAGE_MASK: usize = !(PAGE_SIZE -1);
 
-pub const ADDRESS_MASK: usize = KERNEL_ADDRESS_MASK & PAGE_MASK;
+pub const ADDRESS_MASK: usize = 0x0000FFFF_FFFFF000;
+pub const INV_ADDRESS_MASK: usize = !ADDRESS_MASK;
+
 
 pub const TOTAL_MEMORY: usize = 0x3EFFFFFF;
 pub const TOTAL_PAGE_FRAMES: usize = TOTAL_MEMORY / PAGE_SIZE;

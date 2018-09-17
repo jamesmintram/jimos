@@ -4,6 +4,8 @@ use memory::ADDRESS_MASK;
 
 pub struct Entry(u64);
 
+pub const FLAGS_MASK: u64 = 0x00000000_00000FFF;
+
 bitflags! {
     pub struct EntryFlags: u64 {
         const PRESENT           = 1 << 0;
@@ -29,7 +31,7 @@ impl Entry {
     }
 
     pub fn uflags(&self) -> u64 {
-        self.0 & 0x00000000_00000fff
+        self.0 & FLAGS_MASK
     }
 
     // Only makes sense in the final table (TODO: Update with proper name from arm doc)
