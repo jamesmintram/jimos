@@ -57,19 +57,6 @@ pub unsafe extern "C" fn kmain()
 
     //Setup "proper" Kernel Page Table
     //Unmap all pages above the kernel_end_addr
-    
- 
-
-    //Map some memory
-    // Create 2 user space page tables
-    // Map same VA to different page frames
-    // Test that we are actually writing to different memory
-    // Map another VA to alias a page frame
-    // Test that different addresses can access same memory
-    // Unmap memory
-    // Test data abort
-
-
 
     // Read our bootstrap page table
     extern "C" {
@@ -95,64 +82,70 @@ pub unsafe extern "C" fn kmain()
     write!(kwriter::WRITER, "PHYS 0x{:X?}\n", phys);
 
     //------------------------------------------------
-
-    let (user_table, frame_allocator) = memory::paging::table::new(
-        frame_allocator
-    );
-
     //TODO: This should be all fixed up to use UserAddress or KernelAddress
-    let addr = 42 * 512 * 512 * 4096; // 42th P3 entry
-    let page = Page::containing_address(addr);
-    let frame = frame_allocator
-        .allocate_frame()
-        .expect("no more frames");
+    let addr = 42 * 512 * 512 * 4096; 
 
-    write!(kwriter::WRITER, "Frame start address: {:X?}\n", frame.start_address());
+    let (user_table1, frame_allocator) 
+        = memory::paging::table::new(frame_allocator);
 
-    write!(kwriter::WRITER, "Mapping: {:X?}\n", addr);
+    {
+        let page = Page::containing_address(addr);
+        let frame = frame_allocator
+            .allocate_frame()
+            .expect("no more frames");
 
-    write!(kwriter::WRITER, "None = {:?}, map to {:?}\n",
-            memory::virtual_to_physical(user_table, addr),
-            frame);
+        memory::paging::map_to(
+            user_table1, 
+            page, 
+            frame, 
+            EntryFlags::empty(), 
+            frame_allocator);
+    }
+
+    let (user_table2, frame_allocator) 
+        = memory::paging::table::new(frame_allocator);
+
+    {
+        let page = Page::containing_address(addr);
+        let frame = frame_allocator
+            .allocate_frame()
+            .expect("no more frames");
+
+        memory::paging::map_to(
+            user_table2, 
+            page, 
+            frame, 
+            EntryFlags::empty(), 
+            frame_allocator);
+    }
+
     
-    memory::paging::map_to(
-        user_table, 
-        page, 
-        frame, 
-        EntryFlags::empty(), 
-        frame_allocator);
-
-    write!(
-        kwriter::WRITER, 
-        "Some = {:?}\n", 
-        memory::virtual_to_physical(user_table, addr));
-
-    write!(
-        kwriter::WRITER, 
-        "next free frame: {:?}\n", 
-        frame_allocator.allocate_frame());
-
-    memory::activate_el0(user_table);
 
     // Test out the mapping
     let data : *mut usize = addr as *mut usize;
 
-    write!(
-        kwriter::WRITER, 
-        "Data at data: 0x{:X?}\n", 
-        *data);
-
+    memory::activate_el0(user_table1);
+    
     *data = 1024;
+    write!(
+        kwriter::WRITER, 
+        "UPT1: Data at data: 0x{:X?}\n", 
+        *data);
+
+    memory::activate_el0(user_table2);
 
     write!(
         kwriter::WRITER, 
-        "Data at data: 0x{:X?}\n", 
+        "UPT2: Data at data: 0x{:X?}\n", 
+        *data);
+    
+    memory::activate_el0(user_table1);
+
+    write!(
+        kwriter::WRITER, 
+        "UPT1: Data at data: 0x{:X?}\n", 
         *data);
 
-    memory::clear_el0();
-
-    *data = 2048;
-
-    //write!(kwriter::WRITER, "Exiting jimOS\n");
+    write!(kwriter::WRITER, "Exiting jimOS\n");
     exit();
 }
