@@ -45,9 +45,7 @@ impl<L> Table<L> where L: TableLevel {
         for entry in self.entries.iter_mut() {
             entry.set_unused();
         }
-    }
-
-    
+    }   
 }
 
 impl<L> Table<L> where L: HierarchicalLevel {
@@ -115,4 +113,21 @@ impl<L> IndexMut<usize> for Table<L> where L: TableLevel {
     fn index_mut(&mut self, index: usize) -> &mut Entry {
         &mut self.entries[index]
     }
+}
+
+pub fn new<A> (allocator: &mut A) -> (&mut Table<Level4>, &mut A)
+    where A: FrameAllocator
+{
+    let new_pgt_frame = allocator
+        .allocate_frame()
+        .expect("No more frames");
+
+    let new_pgt_physical_address = new_pgt_frame
+        .start_address();
+
+    let new_pgt_virtual_address = memory::physical_to_kernel(new_pgt_physical_address);
+    let new_pgt_ptr: *mut Table<Level4> = new_pgt_virtual_address as *mut _;
+    let new_pgt = unsafe { &mut (*new_pgt_ptr) };
+
+    (new_pgt, allocator)
 }

@@ -49,8 +49,8 @@ pub unsafe extern "C" fn kmain()
 
     write!(kwriter::WRITER, "Kernel ends at {}\n", kernel_end_addr);
     
-    let mut frame_allocator 
-        = memory::AreaFrameAllocator::new(kernel_end_addr);
+    let frame_allocator 
+        = &mut memory::AreaFrameAllocator::new(kernel_end_addr);
 
     //Turn off identity mapping!
     memory::clear_el0();
@@ -96,8 +96,12 @@ pub unsafe extern "C" fn kmain()
 
     //------------------------------------------------
 
+    let (user_table, frame_allocator) = memory::paging::table::new(
+        frame_allocator
+    );
+
     //TODO: This should be all fixed up to use UserAddress or KernelAddress
-    let addr = memory::physical_to_kernel(42 * 512 * 512 * 4096); // 42th P3 entry
+    let addr = 42 * 512 * 512 * 4096; // 42th P3 entry
     let page = Page::containing_address(addr);
     let frame = frame_allocator
         .allocate_frame()
@@ -108,37 +112,29 @@ pub unsafe extern "C" fn kmain()
     write!(kwriter::WRITER, "Mapping: {:X?}\n", addr);
 
     write!(kwriter::WRITER, "None = {:?}, map to {:?}\n",
-            memory::virtual_to_physical(page_table, addr),
+            memory::virtual_to_physical(user_table, addr),
             frame);
     
     memory::paging::map_to(
-        page_table, 
+        user_table, 
         page, 
         frame, 
         EntryFlags::empty(), 
-        &mut frame_allocator);
+        frame_allocator);
 
     write!(
         kwriter::WRITER, 
         "Some = {:?}\n", 
-        memory::virtual_to_physical(page_table, addr));
+        memory::virtual_to_physical(user_table, addr));
 
     write!(
         kwriter::WRITER, 
         "next free frame: {:?}\n", 
         frame_allocator.allocate_frame());
 
-    memory::flush_tlb();
+    memory::activate_el0(user_table);
 
-    let pgt : *const usize = memory::physical_to_kernel(0x29D000) as *const usize;
-    write!(
-        kwriter::WRITER, 
-        "Data at PGT: 0x{:X?}\n", 
-        *pgt);
-
-    // TODO: Test out the mapping
-    
-
+    // Test out the mapping
     let data : *mut usize = addr as *mut usize;
 
     write!(
@@ -153,6 +149,10 @@ pub unsafe extern "C" fn kmain()
         "Data at data: 0x{:X?}\n", 
         *data);
 
-    write!(kwriter::WRITER, "Exiting jimOS\n");
+    memory::clear_el0();
+
+    *data = 2048;
+
+    //write!(kwriter::WRITER, "Exiting jimOS\n");
     exit();
 }

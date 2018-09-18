@@ -1,6 +1,8 @@
 mod area_frame_allocator;
 pub mod paging;
 
+use memory;
+
 use self::paging::PhysicalAddress;
 use self::paging::VirtualAddress;
 
@@ -77,6 +79,27 @@ pub fn clear_el0()
         asm!("
             msr ttbr0_el1, xzr
         "::);
+    };
+
+    flush_tlb();
+}
+
+pub fn activate_el0(user_table: &Table<Level4>) 
+{
+    let user_table_ptr = user_table as *const _;
+    let user_table_address = user_table_ptr as usize;
+    let user_physical_table_address = memory::kernel_to_physical(user_table_address);
+
+    //TODO: Fix up the register clobbering
+    unsafe {
+        asm!("
+            mov x0, $0
+            msr ttbr0_el1, x0
+        "
+        :
+        : "r"(user_physical_table_address)
+        : 
+        );
     };
 
     flush_tlb();
