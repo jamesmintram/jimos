@@ -2,9 +2,17 @@
 #![feature(compiler_builtins_lib, lang_items, asm, used)]
 #![no_builtins]
 #![no_std]
+#![feature(alloc)]
+
+#![feature(alloc_error_handler)] 
+#![feature(allocator_api)]
+#![feature(min_const_fn)]
 
 #[macro_use]
 extern crate bitflags;
+
+#[macro_use]
+extern crate alloc;
 
 pub mod lang_items;
 
@@ -22,6 +30,7 @@ use memory::FrameAllocator;
 use memory::paging::table::{Table, Level4};
 use memory::paging::Page;
 use memory::paging::entry::EntryFlags;
+use memory::heap_allocator::BumpAllocator;
 
 pub use syscall::int_syscall;
 
@@ -31,6 +40,15 @@ extern "C" {
 }
 
 //--------------------------------------------------------------------
+
+pub const HEAP_START: usize = 42 * 512 * 512 * 4096;
+pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
+
+#[global_allocator]
+static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(
+    HEAP_START,
+    HEAP_START + HEAP_SIZE);
+
 
 #[no_mangle]
 pub unsafe extern "C" fn kmain()
@@ -145,6 +163,27 @@ pub unsafe extern "C" fn kmain()
         kwriter::WRITER, 
         "UPT1: Data at data: 0x{:X?}\n", 
         *data);
+
+
+    let mut vec_test = vec![1,2,3,4,5,6,7];
+    vec_test[3] = 42;
+    for i in &vec_test {
+        write!(
+        kwriter::WRITER,"{} ", i);
+    }
+
+
+    // {
+    //     let page = Page::containing_address(addr);
+    //     memory::paging::unmap(
+    //         user_table1,
+    //         page, 
+    //         frame_allocator);
+
+    //     memory::flush_tlb();
+    // }
+    //Expect data abort
+    //*data = 10;
 
     write!(kwriter::WRITER, "Exiting jimOS\n");
     exit();

@@ -1,5 +1,6 @@
 [dependencies]
 core = {}
 
-[dependencies.compiler_builtins]
-stage = 1
+
+[target.aarch64-none-elf.dependencies]
+alloc = {}

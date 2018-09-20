@@ -1,5 +1,6 @@
 mod area_frame_allocator;
 pub mod paging;
+pub mod heap_allocator;
 
 use memory;
 
