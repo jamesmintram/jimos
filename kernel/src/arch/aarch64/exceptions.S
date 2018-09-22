@@ -49,7 +49,7 @@ _vectors:
   // Current EL with SP0
   //-------------------------------------
 
-  // synchronous - from SVC
+  // synchronous 
   .align  7
   mov     x0, #0
   mrs     x1, esr_el1

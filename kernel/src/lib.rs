@@ -138,6 +138,18 @@ pub unsafe extern "C" fn kmain()
     }
 
     
+    // Trigger a data abort
+    // Capture and handle data abort
+    //  Read exception type
+    //  Match against the exception type
+    //      Data/Instruction abort
+    //      Anything else Panic at the disco
+
+    // Question: Are interrupts masked during a Sync Exception?
+
+    // Usefull: cpufunc.c, locore.S, trap.c, armreg.h
+    //Note:
+    // qemu-system-aarch64 -M raspi3 -semihosting -serial stdio -device loader,file=build/blinky.bin,addr=0x0   -d int
 
     // Test out the mapping
     let data : *mut usize = addr as *mut usize;
