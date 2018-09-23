@@ -1,11 +1,14 @@
 use arch::aarch64::frame;
 use arch::aarch64::arm;
 
+use memory;
 use memory::virtual_address;
 use process;
 
 use kwriter;
 use core::fmt::Write;
+
+#[allow(non_camel_case_types)]
 
 #[derive(Copy, Clone ,Debug, PartialEq)]
 pub enum Exception {
@@ -56,30 +59,57 @@ fn exception_from_esr(esr: u32) -> Exception {
     }
 }
 
+//TODO: This is temporary
+fn remap(process: &process::Process)
+{    
+    write!(kwriter::WRITER, "Switching out PGT\n");
+    memory::activate_el0(process.page_table);
+}
+
+fn data_abort(
+    _frame: &frame::TrapFrame, 
+    process: &process::Process, 
+    far: u64, 
+    _low: bool)
+{
+    /*
+	 * According to the ARMv8-A rev. A.g, B2.10.5 "Load-Exclusive
+	 * and Store-Exclusive instruction usage restrictions", state
+	 * of the exclusive monitors after data abort exception is unknown.
+	 */
+	arm::clrex();
+
+    let fault_address = virtual_address::from_u64(far);
+
+    write!(
+        kwriter::WRITER,
+        "Fault address: {:?}\n",
+        fault_address);    
+
+    remap(process);
+
+    //TODO: Check for success
+    //TODO: Rewrite as handle_page_fault(..blah)
+}
+
 #[no_mangle]
 #[allow(dead_code)]
 pub unsafe extern "C" fn do_el1h_sync(
-    thread: usize,
     frame_ptr: *const frame::TrapFrame) -> i32
 {
     let frame = &*frame_ptr;
     let exception = exception_from_esr(frame.tf_esr);
+    let process = process::get_current_process();
 
     match exception {
         //TODO: Match on all data aborts
         Exception::DATA_ABORT => {
             let far = arm::read_far_el1();
-            let fault_address = virtual_address::from_u64(far);
-            let process = process::get_current_process();
-
-            write!(
-                kwriter::WRITER,
-                "Fault address: {:?}\n",
-                fault_address);
-
-            //TODO: Check for success
-            //TODO: Rewrite as handle_page_fault(..blah)
-            ::remap(process);
+            data_abort(frame, process, far, false);            
+        },
+        Exception::DATA_ABORT_L => {
+            let far = arm::read_far_el1();
+            data_abort(frame, process, far, true);            
         },
         _ => {
             panic!("Unhandled Exception: {:?}", exception);
@@ -93,14 +123,17 @@ pub unsafe extern "C" fn do_el1h_sync(
 
 fn dump_regs(frame: &frame::TrapFrame)
 {
-    write!(kwriter::WRITER,"SP: {:X?}  {}\n", frame.tf_sp, frame.tf_sp);
-    write!(kwriter::WRITER,"LR: {:X?}  {}\n", frame.tf_lr, frame.tf_lr);
-    write!(kwriter::WRITER,"ELR: {:X?}  {}\n", frame.tf_elr, frame.tf_elr);
-    write!(kwriter::WRITER,"SPSR: {:X?}  {}\n", frame.tf_spsr, frame.tf_spsr);
-    write!(kwriter::WRITER,"ESR: {:X?}  {}\n", frame.tf_esr, frame.tf_esr);
+    // borrow of packed field is unsafe and requires unsafe function or block
+    unsafe {
+        write!(kwriter::WRITER,"SP: {:X?}  {}\n", frame.tf_sp, frame.tf_sp);
+        write!(kwriter::WRITER,"LR: {:X?}  {}\n", frame.tf_lr, frame.tf_lr);
+        write!(kwriter::WRITER,"ELR: {:X?}  {}\n", frame.tf_elr, frame.tf_elr);
+        write!(kwriter::WRITER,"SPSR: {:X?}  {}\n", frame.tf_spsr, frame.tf_spsr);
+        write!(kwriter::WRITER,"ESR: {:X?}  {}\n", frame.tf_esr, frame.tf_esr);
 
-    for i in 0..30  {
-        write!(kwriter::WRITER,"X{}: {:X?}\n", i, frame.tf_x[i]);
+        for i in 0..30  {
+            write!(kwriter::WRITER,"X{}: {:X?}\n", i, frame.tf_x[i]);
+        }
     }
 }
 

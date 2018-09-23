@@ -8,6 +8,9 @@
 #![feature(allocator_api)]
 #![feature(min_const_fn)]
 
+//Temporary
+#![allow(dead_code)]
+
 #[macro_use]
 extern crate bitflags;
 
@@ -31,7 +34,6 @@ mod kwriter;
 use core::fmt::Write;
 
 use memory::FrameAllocator;
-use memory::paging::table::{Table, Level4};
 use memory::paging::Page;
 use memory::paging::entry::EntryFlags;
 use memory::heap_allocator::BumpAllocator;
@@ -50,26 +52,19 @@ extern "C" {
 pub const HEAP_START: usize = 42 * 512 * 512 * 4096;
 pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
 
+//TODO: Update this thing to bring it online after memory system is initialized
 #[global_allocator]
 static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(
     HEAP_START,
     HEAP_START + HEAP_SIZE);
 
-
-static mut gtable1: *mut Table<Level4> = 0 as *mut Table<Level4>;
-
 #[no_mangle]
 pub unsafe extern "C" fn kmain()
 {
-    //TODO: Map the HardwareIO
     uart::uart_init();
 
     write!(kwriter::WRITER, "UART init\n");
-
     write!(kwriter::WRITER, "Building kernel page tables\n");
-
-    // Create a new process
-    // Schedule process
 
     let kernel_end_addr =  (&kernel_end as *const _) as usize;
 
@@ -81,31 +76,15 @@ pub unsafe extern "C" fn kmain()
     //Turn off identity mapping!
     memory::clear_el0();
 
-    //Setup "proper" Kernel Page Table
-    //Unmap all pages above the kernel_end_addr
-
+    //TODO: Move this into a static variable - there is only 1 true kernel page table
     // Read our bootstrap page table
-    extern "C" {
-        static mut __page_tables_start: u8;
-    }   
+    // extern "C" {
+    //     static mut __page_tables_start: u8;
+    // }   
 
-    let page_table_addr =  (& __page_tables_start as *const _ as usize) | memory::KERNEL_ADDRESS_START;
-    let page_table_ptr: *mut Table<Level4> = page_table_addr as *mut _;
-    let page_table = &mut (*page_table_ptr);
-
-    let _addr1 = memory::virtual_to_physical(page_table, memory::KERNEL_ADDRESS_START);
-    let addr2 = memory::virtual_to_physical(page_table, 0x3EADBEEF);
-    //let addr3 = memory::virtual_to_physical(page_table, 0xDEADBEEF);
-
-
-    write!(kwriter::WRITER, "PGT 0x{:X?}\n", memory::PAGE_MASK);
-    write!(kwriter::WRITER, "ADDR 0x{:X?}\n", addr2);
-
-    let kern = memory::physical_to_kernel(0xDEADBEEF);
-    let phys = memory::kernel_to_physical(kern);
-
-    write!(kwriter::WRITER, "KERN 0x{:X?}\n", kern);
-    write!(kwriter::WRITER, "PHYS 0x{:X?}\n", phys);
+    // let page_table_addr =  (& __page_tables_start as *const _ as usize) | memory::KERNEL_ADDRESS_START;
+    // let page_table_ptr: *mut Table<Level4> = page_table_addr as *mut _;
+    // let kernel_page_table = &mut (*page_table_ptr);
 
     //------------------------------------------------
     //TODO: This should be all fixed up to use UserAddress or KernelAddress
@@ -130,10 +109,11 @@ pub unsafe extern "C" fn kmain()
     }
 
     //TODO: Why doesn't borrow checker complain?
+    //TODO: This should also activate the "Process" page table
     process::switch_process(&mut process1);
     //process::switch_process(&mut process1);
 
-    let (user_table2, frame_allocator) 
+    let (user_table2, _frame_allocator) 
         = memory::paging::table::new(frame_allocator);
 
     // {
@@ -150,19 +130,7 @@ pub unsafe extern "C" fn kmain()
     //         frame_allocator);
     // }
 
-    
-    // Trigger a data abort
-    // Capture and handle data abort
-    //  Read exception type
-    //  Match against the exception type
-    //      Data/Instruction abort
-    //      Anything else Panic at the disco
-
     // Question: Are interrupts masked during a Sync Exception?
-
-    // Usefull: cpufunc.c, locore.S, trap.c, armreg.h
-    //Note:
-    // qemu-system-aarch64 -M raspi3 -semihosting -serial stdio -device loader,file=build/blinky.bin,addr=0x0   -d int
 
     // Test out the mapping
     let data : *mut usize = addr as *mut usize;
@@ -176,8 +144,6 @@ pub unsafe extern "C" fn kmain()
         *data);
 
     memory::activate_el0(user_table2);
-
-    //gtable1 = user_table1 as *mut Table<Level4>;
 
     write!(
         kwriter::WRITER, 
@@ -209,17 +175,11 @@ pub unsafe extern "C" fn kmain()
 
     //     memory::flush_tlb();
     // }
-    //Expect data abort
-    //*data = 10;
-
-    //arch::aarch64::trap::do_el1h_sync(0 as *const arch::aarch64::frame::TrapFrame);
 
     write!(kwriter::WRITER, "Exiting jimOS\n");
     exit();
+    
+    // Create a new process
+    // Schedule process
 }
 
-pub unsafe fn remap(process: &process::Process)
-{    
-    write!(kwriter::WRITER, "Switching out PGT\n");
-    memory::activate_el0(process.page_table);
-}

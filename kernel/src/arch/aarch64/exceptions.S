@@ -90,7 +90,7 @@ ENTRY(handle_el1h_sync)
 	
   save_registers 1
 	//ldr	x0, [x18, #PC_CURTHREAD]
-	mov	x1, sp
+	mov	x0, sp
 	bl	do_el1h_sync
 	restore_registers 1
   //b exit
