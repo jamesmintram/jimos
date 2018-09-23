@@ -2,6 +2,7 @@ mod area_frame_allocator;
 pub mod paging;
 pub mod heap_allocator;
 pub mod virtual_address;
+pub mod address_space;
 
 use memory;
 

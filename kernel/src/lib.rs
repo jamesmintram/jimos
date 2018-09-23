@@ -17,6 +17,8 @@ extern crate bitflags;
 #[macro_use]
 extern crate alloc;
 
+extern crate spin;
+
 pub mod lang_items;
 
 mod arch;
@@ -36,7 +38,7 @@ use core::fmt::Write;
 use memory::FrameAllocator;
 use memory::paging::Page;
 use memory::paging::entry::EntryFlags;
-use memory::heap_allocator::BumpAllocator;
+use memory::heap_allocator::LockedHeap;
 
 // Required here to make them accessable to ASM
 pub use syscall::int_syscall;
@@ -48,15 +50,11 @@ extern "C" {
 }
 
 //--------------------------------------------------------------------
+pub const HEAP_START: usize = 1024 * 1024 * 1024 * 256; // 256MB for now
+pub const HEAP_SIZE: usize = 1024 * 1024 * 1024 * 256; // 256MB for now
 
-pub const HEAP_START: usize = 42 * 512 * 512 * 4096;
-pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
-
-//TODO: Update this thing to bring it online after memory system is initialized
 #[global_allocator]
-static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(
-    HEAP_START,
-    HEAP_START + HEAP_SIZE);
+static HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
 
 #[no_mangle]
 pub unsafe extern "C" fn kmain()
@@ -70,8 +68,19 @@ pub unsafe extern "C" fn kmain()
 
     write!(kwriter::WRITER, "Kernel ends at {}\n", kernel_end_addr);
     
+    // Initialise the heap
+    let heap_start = kernel_end_addr + HEAP_START + memory::KERNEL_ADDRESS_START;
+    let heap_end = heap_start + HEAP_SIZE;
+    
+
+    //TODO: This guy should be placed at the start of the kernel
+    //      memory and use some of it for book-keeping.
     let frame_allocator 
         = &mut memory::AreaFrameAllocator::new(kernel_end_addr);
+
+    // TODO: Update this to use the frame allocator - this 
+    // is basically the replacement for kmalloc 
+    HEAP_ALLOCATOR.lock().init(heap_start, heap_end);
 
     //Turn off identity mapping!
     memory::clear_el0();
@@ -89,6 +98,9 @@ pub unsafe extern "C" fn kmain()
     //------------------------------------------------
     //TODO: This should be all fixed up to use UserAddress or KernelAddress
     let addr = 42 * 512 * 512 * 4096; 
+
+    let add_space = memory::address_space::new();
+
 
     let (user_table1, frame_allocator) 
         = memory::paging::table::new(frame_allocator);

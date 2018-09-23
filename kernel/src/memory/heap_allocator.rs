@@ -1,7 +1,14 @@
 use alloc::alloc::{GlobalAlloc, Layout};
 use core::sync::atomic::{AtomicUsize, Ordering};
 
+//use core::mem;
 
+// #[cfg(feature = "use_spin")]
+use core::ops::Deref;
+//use core::ptr::NonNull;
+
+// #[cfg(feature = "use_spin")]
+use spin::Mutex;
 
 /// A simple allocator that allocates memory linearly and ignores freed memory.
 #[derive(Debug)]
@@ -11,14 +18,24 @@ pub struct BumpAllocator {
     next: AtomicUsize,
 }
 
-impl BumpAllocator {
-    pub const fn new(heap_start: usize, heap_end: usize) -> Self {
+impl BumpAllocator 
+{
+    pub const fn new() -> Self {
         // NOTE: requires adding #![feature(const_atomic_usize_new)] to lib.rs
-        Self { heap_start, heap_end, next: AtomicUsize::new(heap_start) }
+        Self {
+            heap_start: 0,
+            heap_end: 0,
+            next: AtomicUsize::new(0),
+        }
     }
-}
+    pub fn init(&mut self, heap_start: usize, heap_end: usize) 
+    {
+        //TODO: Assert that we only init once
+        self.heap_start = heap_start;
+        self.heap_end = heap_end;
+        self.next = AtomicUsize::new(heap_start);
+    }
 
-unsafe impl GlobalAlloc for BumpAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         loop {
             // load current state of the `next` field
@@ -40,15 +57,61 @@ unsafe impl GlobalAlloc for BumpAllocator {
         }
     }
 
-    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {
+    unsafe fn deallocate(&self, _ptr: *mut u8, _layout: Layout) {
         // do nothing, leak memory
     }
 }
+
+
+unsafe impl GlobalAlloc for BumpAllocator {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        0 as *mut u8
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        
+    }
+}
+
 
 #[alloc_error_handler]
 fn foo(_: Layout) -> ! {
     panic!("Out of memory")
 }
+
+
+pub struct LockedHeap(Mutex<BumpAllocator>);
+
+impl LockedHeap {
+    /// Creates an empty heap. All allocate calls will return `None`.
+    pub const fn empty() -> LockedHeap {
+        LockedHeap(Mutex::new(BumpAllocator::new()))
+    }
+}
+
+
+unsafe impl GlobalAlloc for LockedHeap {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        self.0
+            .lock()
+            .alloc(layout)
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        self.0
+            .lock()
+            .deallocate(ptr, layout)
+    }
+}
+
+impl Deref for LockedHeap {
+    type Target = Mutex<BumpAllocator>;
+
+    fn deref(&self) -> &Mutex<BumpAllocator> {
+        &self.0
+    }
+}
+ 
 
 /// Align downwards. Returns the greatest x with alignment `align`
 /// so that x <= addr. The alignment must be a power of 2.
