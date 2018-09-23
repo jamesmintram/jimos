@@ -1,7 +1,12 @@
 use arch::aarch64::frame;
+use arch::aarch64::arm;
+
+use memory::virtual_address;
+use process;
 
 use kwriter;
 use core::fmt::Write;
+
 #[derive(Copy, Clone ,Debug, PartialEq)]
 pub enum Exception {
     UNKNOWN = 0x00,     /* Unkwn exception */
@@ -57,30 +62,31 @@ pub unsafe extern "C" fn do_el1h_sync(
     thread: usize,
     frame_ptr: *const frame::TrapFrame) -> i32
 {
-    //TODO: Figure out what kind of exception we have
     let frame = &*frame_ptr;
-
     let exception = exception_from_esr(frame.tf_esr);
 
-    // Page fault
     match exception {
+        //TODO: Match on all data aborts
         Exception::DATA_ABORT => {
-            ::remap();
+            let far = arm::read_far_el1();
+            let fault_address = virtual_address::from_u64(far);
+            let process = process::get_current_process();
+
+            write!(
+                kwriter::WRITER,
+                "Fault address: {:?}\n",
+                fault_address);
+
+            //TODO: Check for success
+            //TODO: Rewrite as handle_page_fault(..blah)
+            ::remap(process);
         },
         _ => {
             panic!("Unhandled Exception: {:?}", exception);
         }
     }
 
-
-    //TODO: Remap the memory that we need for this call
-    // Hack by calling a fn
-    // Semi-hack by getting pgt from param0
-    // Eventually from a process struct
-
     //TODO: Fix up the register clobbering memory/mod.rs
-    //panic!();
-    //TODO: Fix panic!(string)
     //panic!("Unhandled exception")
     return -1;
 }

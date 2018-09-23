@@ -1,6 +1,7 @@
 mod area_frame_allocator;
 pub mod paging;
 pub mod heap_allocator;
+pub mod virtual_address;
 
 use memory;
 
@@ -94,8 +95,8 @@ pub fn activate_el0(user_table: &Table<Level4>)
     //TODO: Fix up the register clobbering
     unsafe {
         asm!("
-            mov x0, $0
-            msr ttbr0_el1, x0
+            mov x18, $0
+            msr ttbr0_el1, x18
         "
         :
         : "r"(user_physical_table_address)

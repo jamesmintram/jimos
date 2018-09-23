@@ -18,11 +18,14 @@ pub mod lang_items;
 
 mod arch;
 mod memory;
-mod uart;
+mod process;
 mod syscall;
+
+mod uart;
 mod gpio;
 mod mailbox;
 mod panic;
+
 
 mod kwriter;
 use core::fmt::Write;
@@ -110,6 +113,7 @@ pub unsafe extern "C" fn kmain()
 
     let (user_table1, frame_allocator) 
         = memory::paging::table::new(frame_allocator);
+    let mut process1 = process::Process{page_table: user_table1};
 
     {
         let page = Page::containing_address(addr);
@@ -118,12 +122,16 @@ pub unsafe extern "C" fn kmain()
             .expect("no more frames");
 
         memory::paging::map_to(
-            user_table1, 
+            process1.page_table, 
             page, 
             frame, 
             EntryFlags::empty(), 
             frame_allocator);
     }
+
+    //TODO: Why doesn't borrow checker complain?
+    process::switch_process(&mut process1);
+    //process::switch_process(&mut process1);
 
     let (user_table2, frame_allocator) 
         = memory::paging::table::new(frame_allocator);
@@ -159,7 +167,7 @@ pub unsafe extern "C" fn kmain()
     // Test out the mapping
     let data : *mut usize = addr as *mut usize;
 
-    memory::activate_el0(user_table1);
+    memory::activate_el0(process1.page_table);
     
     *data = 1024;
     write!(
@@ -169,7 +177,7 @@ pub unsafe extern "C" fn kmain()
 
     memory::activate_el0(user_table2);
 
-    gtable1 = user_table1 as *mut Table<Level4>;
+    //gtable1 = user_table1 as *mut Table<Level4>;
 
     write!(
         kwriter::WRITER, 
@@ -210,8 +218,8 @@ pub unsafe extern "C" fn kmain()
     exit();
 }
 
-pub unsafe fn remap()
+pub unsafe fn remap(process: &process::Process)
 {    
-    //write!(kwriter::WRITER, "Switching out PGT\n");
-   memory::activate_el0(&*gtable1);
+    write!(kwriter::WRITER, "Switching out PGT\n");
+    memory::activate_el0(process.page_table);
 }
