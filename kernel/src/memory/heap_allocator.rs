@@ -1,4 +1,4 @@
-use alloc::alloc::{GlobalAlloc, AllocErr, Layout};
+use alloc::alloc::{GlobalAlloc, Layout};
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 
@@ -40,7 +40,7 @@ unsafe impl GlobalAlloc for BumpAllocator {
         }
     }
 
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {
         // do nothing, leak memory
     }
 }

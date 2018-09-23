@@ -1,7 +1,7 @@
 use memory::Frame; 
 use memory::PAGE_SIZE;
 use memory::ADDRESS_MASK;
-use memory::ADDRESS_FLAGS_MASK;
+//use memory::ADDRESS_FLAGS_MASK;
 
 pub struct Entry(u64);
 
@@ -29,9 +29,9 @@ impl Entry {
         EntryFlags::from_bits_truncate(self.0)
     }
 
-    pub fn uflags(&self) -> u64 {
-        self.0 & ADDRESS_FLAGS_MASK
-    }
+    // pub fn uflags(&self) -> u64 {
+    //     self.0 & ADDRESS_FLAGS_MASK
+    // }
 
     // Only makes sense in the final table (TODO: Update with proper name from arm doc)
     pub fn pointed_frame(&self) -> Option<Frame> {

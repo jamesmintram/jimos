@@ -16,6 +16,7 @@ extern crate alloc;
 
 pub mod lang_items;
 
+mod arch;
 mod memory;
 mod uart;
 mod syscall;
@@ -32,7 +33,9 @@ use memory::paging::Page;
 use memory::paging::entry::EntryFlags;
 use memory::heap_allocator::BumpAllocator;
 
+// Required here to make them accessable to ASM
 pub use syscall::int_syscall;
+pub use arch::aarch64::trap::do_el1h_sync;
 
 extern "C" {
     fn exit();
@@ -49,6 +52,8 @@ static HEAP_ALLOCATOR: BumpAllocator = BumpAllocator::new(
     HEAP_START,
     HEAP_START + HEAP_SIZE);
 
+
+static mut gtable1: *mut Table<Level4> = 0 as *mut Table<Level4>;
 
 #[no_mangle]
 pub unsafe extern "C" fn kmain()
@@ -123,19 +128,19 @@ pub unsafe extern "C" fn kmain()
     let (user_table2, frame_allocator) 
         = memory::paging::table::new(frame_allocator);
 
-    {
-        let page = Page::containing_address(addr);
-        let frame = frame_allocator
-            .allocate_frame()
-            .expect("no more frames");
+    // {
+    //     let page = Page::containing_address(addr);
+    //     let frame = frame_allocator
+    //         .allocate_frame()
+    //         .expect("no more frames");
 
-        memory::paging::map_to(
-            user_table2, 
-            page, 
-            frame, 
-            EntryFlags::empty(), 
-            frame_allocator);
-    }
+    //     memory::paging::map_to(
+    //         user_table2, 
+    //         page, 
+    //         frame, 
+    //         EntryFlags::empty(), 
+    //         frame_allocator);
+    // }
 
     
     // Trigger a data abort
@@ -164,25 +169,27 @@ pub unsafe extern "C" fn kmain()
 
     memory::activate_el0(user_table2);
 
+    gtable1 = user_table1 as *mut Table<Level4>;
+
     write!(
         kwriter::WRITER, 
-        "UPT2: Data at data: 0x{:X?}\n", 
+        "Data at data: 0x{:X?}\n", 
         *data);
     
-    memory::activate_el0(user_table1);
+    // memory::activate_el0(user_table1);
 
-    write!(
-        kwriter::WRITER, 
-        "UPT1: Data at data: 0x{:X?}\n", 
-        *data);
+    // write!(
+    //     kwriter::WRITER, 
+    //     "UPT1: Data at data: 0x{:X?}\n", 
+    //     *data);
 
 
-    let mut vec_test = vec![1,2,3,4,5,6,7];
-    vec_test[3] = 42;
-    for i in &vec_test {
-        write!(
-        kwriter::WRITER,"{} ", i);
-    }
+    // let mut vec_test = vec![1,2,3,4,5,6,7];
+    // vec_test[3] = 42;
+    // for i in &vec_test {
+    //     write!(
+    //     kwriter::WRITER,"{} ", i);
+    // }
 
 
     // {
@@ -197,6 +204,14 @@ pub unsafe extern "C" fn kmain()
     //Expect data abort
     //*data = 10;
 
+    //arch::aarch64::trap::do_el1h_sync(0 as *const arch::aarch64::frame::TrapFrame);
+
     write!(kwriter::WRITER, "Exiting jimOS\n");
     exit();
+}
+
+pub unsafe fn remap()
+{    
+    //write!(kwriter::WRITER, "Switching out PGT\n");
+   memory::activate_el0(&*gtable1);
 }
