@@ -76,7 +76,7 @@ pub unsafe extern "C" fn kmain()
     //TODO: This guy should be placed at the start of the kernel
     //      memory and use some of it for book-keeping.
     let frame_allocator 
-        = &mut memory::AreaFrameAllocator::new(kernel_end_addr);
+        = memory::AreaFrameAllocator::new(kernel_end_addr);
 
     // TODO: Update this to use the frame allocator - this 
     // is basically the replacement for kmalloc 
