@@ -5,6 +5,7 @@ pub mod virtual_address;
 pub mod address_space;
 
 use memory;
+use arch::aarch64::arm;
 
 use self::paging::PhysicalAddress;
 use self::paging::VirtualAddress;
@@ -76,45 +77,12 @@ pub fn virtual_to_physical(
          .map(|frame| frame.number * PAGE_SIZE + offset)
 }
 
-pub fn clear_el0() 
-{
-    unsafe {
-        asm!("
-            msr ttbr0_el1, xzr
-        "::);
-    };
-
-    flush_tlb();
-}
-
 pub fn activate_el0(user_table: &Table<Level4>) 
 {
     let user_table_ptr = user_table as *const _;
     let user_table_address = user_table_ptr as usize;
     let user_physical_table_address = memory::kernel_to_physical(user_table_address);
 
-    //TODO: Fix up the register clobbering
-    unsafe {
-        asm!("
-            mov x18, $0
-            msr ttbr0_el1, x18
-        "
-        :
-        : "r"(user_physical_table_address)
-        : 
-        );
-    };
-
-    flush_tlb();
-}
-
-pub fn flush_tlb()
-{
-    unsafe {
-        asm!("
-            TLBI VMALLE1
-            dsb ish
-            isb
-        "::);
-    };
+    arm::set_ttbr0_el1(user_physical_table_address);
+    arm::flush_tlb();
 }

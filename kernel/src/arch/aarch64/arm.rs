@@ -42,3 +42,34 @@ pub fn clrex()
 	 */
     unsafe { asm!("clrex"::: "memory"); };
 }
+
+pub fn reset_ttbr0_el1() 
+{
+    set_ttbr0_el1(0);
+}
+
+pub fn set_ttbr0_el1(value: usize) 
+{
+    //TODO: Fix up the register clobbering
+    unsafe {
+        asm!("
+            mov x18, $0
+            msr ttbr0_el1, x18
+        "
+        :
+        : "r"(value)
+        : 
+        );
+    };
+}
+
+pub fn flush_tlb()
+{
+    unsafe {
+        asm!("
+            TLBI VMALLE1
+            dsb ish
+            isb
+        "::);
+    };
+}

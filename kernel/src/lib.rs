@@ -40,6 +40,8 @@ use memory::paging::Page;
 use memory::paging::entry::EntryFlags;
 use memory::heap_allocator::LockedHeap;
 
+use arch::aarch64::arm;
+
 // Required here to make them accessable to ASM
 pub use syscall::int_syscall;
 pub use arch::aarch64::trap::do_el1h_sync;
@@ -83,7 +85,7 @@ pub unsafe extern "C" fn kmain()
     HEAP_ALLOCATOR.lock().init(heap_start, heap_end);
 
     //Turn off identity mapping!
-    memory::clear_el0();
+    arm::reset_ttbr0_el1();
 
     //TODO: Move this into a static variable - there is only 1 true kernel page table
     // Read our bootstrap page table
