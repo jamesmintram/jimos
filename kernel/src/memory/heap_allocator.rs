@@ -1,6 +1,12 @@
 use alloc::alloc::{GlobalAlloc, Layout};
 use core::sync::atomic::{AtomicUsize, Ordering};
 
+use memory;
+use memory::FrameAllocator;
+use memory::AreaFrameAllocator;
+
+use alloc::boxed::Box;
+
 //use core::mem;
 
 // #[cfg(feature = "use_spin")]
@@ -16,45 +22,52 @@ pub struct BumpAllocator {
     heap_start: usize,
     heap_end: usize,
     next: AtomicUsize,
+
+    allocator: Box<AreaFrameAllocator>,
 }
 
 impl BumpAllocator 
 {
-    pub const fn new() -> Self {
-        // NOTE: requires adding #![feature(const_atomic_usize_new)] to lib.rs
+    pub fn new(allocator: Box<AreaFrameAllocator>) -> Self 
+    {
         Self {
             heap_start: 0,
             heap_end: 0,
             next: AtomicUsize::new(0),
+            allocator: allocator,
         }
     }
-    pub fn init(&mut self, heap_start: usize, heap_end: usize) 
-    {
-        //TODO: Assert that we only init once
-        self.heap_start = heap_start;
-        self.heap_end = heap_end;
-        self.next = AtomicUsize::new(heap_start);
-    }
 
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        loop {
-            // load current state of the `next` field
-            let current_next = self.next.load(Ordering::Relaxed);
-            let alloc_start = align_up(current_next, layout.align());
-            let alloc_end = alloc_start.saturating_add(layout.size());
+    unsafe fn alloc(&mut self, layout: Layout) -> *mut u8 {
+        
+        //let fa = &mut self.allocator.lock();
+        // let ff = fa.expect("Mem not inited");
+        let new_frame = self.allocator
+            .allocate_frame()
+            .expect("No more darta");
 
-            if alloc_end <= self.heap_end {
-                // update the `next` pointer if it still has the value `current_next`
-                let next_now = self.next.compare_and_swap(current_next, alloc_end,
-                    Ordering::Relaxed);
-                if next_now == current_next {
-                    // next address was successfully updated, allocation succeeded
-                    return alloc_start as *mut u8;
-                }
-            } else {
-                return 0 as *mut u8; //Err(AllocErr::Exhausted{ request: layout })
-            }
-        }
+        let addr = memory::physical_to_kernel(new_frame.start_address());
+        return addr as *mut u8;
+
+
+        // loop {
+        //     // load current state of the `next` field
+        //     let current_next = self.next.load(Ordering::Relaxed);
+        //     let alloc_start = align_up(current_next, layout.align());
+        //     let alloc_end = alloc_start.saturating_add(layout.size());
+
+        //     if alloc_end <= self.heap_end {
+        //         // update the `next` pointer if it still has the value `current_next`
+        //         let next_now = self.next.compare_and_swap(current_next, alloc_end,
+        //             Ordering::Relaxed);
+        //         if next_now == current_next {
+        //             // next address was successfully updated, allocation succeeded
+        //             return alloc_start as *mut u8;
+        //         }
+        //     } else {
+        //         return 0 as *mut u8; //Err(AllocErr::Exhausted{ request: layout })
+        //     }
+        // }
     }
 
     unsafe fn deallocate(&self, _ptr: *mut u8, _layout: Layout) {
@@ -80,34 +93,43 @@ fn foo(_: Layout) -> ! {
 }
 
 
-pub struct LockedHeap(Mutex<BumpAllocator>);
+pub struct LockedHeap(Mutex<Option<BumpAllocator>>);
 
 impl LockedHeap {
     /// Creates an empty heap. All allocate calls will return `None`.
     pub const fn empty() -> LockedHeap {
-        LockedHeap(Mutex::new(BumpAllocator::new()))
+        LockedHeap(Mutex::new(None))
+    }
+
+    //NOTE: NOTE THREAD SAFE!
+    pub fn init(&mut self, allocator: Box<AreaFrameAllocator>) {
+        self.0 = Mutex::new(Some(BumpAllocator::new(allocator)));
     }
 }
 
-
 unsafe impl GlobalAlloc for LockedHeap {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        self.0
-            .lock()
-            .alloc(layout)
+        let mut lock = self.0.lock();
+
+        if let Some(ref mut allocator) = *lock {
+            return allocator.alloc(layout);
+        }
+
+        panic!();
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        self.0
-            .lock()
-            .deallocate(ptr, layout)
+        let mut lock = self.0.lock();
+        if let Some(ref mut allocator) = *lock {
+            allocator.deallocate(ptr, layout);
+        }
     }
 }
 
 impl Deref for LockedHeap {
-    type Target = Mutex<BumpAllocator>;
+    type Target = Mutex<Option<BumpAllocator>>;
 
-    fn deref(&self) -> &Mutex<BumpAllocator> {
+    fn deref(&self) -> &Mutex<Option<BumpAllocator>> {
         &self.0
     }
 }

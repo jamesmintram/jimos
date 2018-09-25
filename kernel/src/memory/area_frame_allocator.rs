@@ -1,6 +1,9 @@
 use memory;
 use memory::{Frame, FrameAllocator};
 
+use alloc::boxed::Box;
+
+#[derive(Debug)]
 pub struct AreaFrameAllocator {
     next_free_frame: Frame,
 }
@@ -9,14 +12,15 @@ impl AreaFrameAllocator {
     //
     //  Accepts the address from which it can start allocating from
     //
-    pub fn new<'a> (physical_start_address: usize) -> &'a mut AreaFrameAllocator {
+    pub fn new<'a> (physical_start_address: usize) -> Box<AreaFrameAllocator> {
 
         let allocator_va = memory::physical_to_kernel(physical_start_address);
         let allocator_ptr = allocator_va as *mut AreaFrameAllocator;
         
-        let allocator: &'a mut AreaFrameAllocator = unsafe {&mut *allocator_ptr};
+        //We actually need a box here
+        let mut allocator = unsafe {Box::from_raw(allocator_ptr)};
 
-        let allocator_memory = 1024 * 1024 * 16;    //16 TEMP
+        let allocator_memory = 1024 * 16;    //16KB TEMP (Allocator data)
 
         let physical_heap_start_address = physical_start_address + allocator_memory;
         let first_frame = Frame::containing_address(physical_heap_start_address);

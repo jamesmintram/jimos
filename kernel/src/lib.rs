@@ -40,7 +40,11 @@ use memory::paging::Page;
 use memory::paging::entry::EntryFlags;
 use memory::heap_allocator::LockedHeap;
 
+
+
+//Temp
 use arch::aarch64::arm;
+use spin::Mutex;
 
 // Required here to make them accessable to ASM
 pub use syscall::int_syscall;
@@ -52,15 +56,18 @@ extern "C" {
 }
 
 //--------------------------------------------------------------------
-pub const HEAP_START: usize = 1024 * 1024 * 1024 * 256; // 256MB for now
-pub const HEAP_SIZE: usize = 1024 * 1024 * 1024 * 256; // 256MB for now
+//pub const HEAP_START: usize = 1024 * 1024 * 256; // 256MB for now
+pub const HEAP_SIZE: usize = 1024 * 1024 * 256; // 256MB for now
 
 #[global_allocator]
-static HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
+static mut HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
 
 #[no_mangle]
 pub unsafe extern "C" fn kmain()
 {
+    //Turn off identity mapping in EL0
+    arm::reset_ttbr0_el1();
+
     uart::uart_init();
 
     write!(kwriter::WRITER, "UART init\n");
@@ -71,22 +78,41 @@ pub unsafe extern "C" fn kmain()
     write!(kwriter::WRITER, "Kernel ends at {}\n", kernel_end_addr);
     
     // Initialise the heap
-    let heap_start = kernel_end_addr + HEAP_START + memory::KERNEL_ADDRESS_START;
+    let anon_mem_start = kernel_end_addr + HEAP_SIZE;
+
+    let heap_start = kernel_end_addr + memory::KERNEL_ADDRESS_START;
     let heap_end = heap_start + HEAP_SIZE;
     
+    // This manages pageable memory
+    let kernel_alloc  =
+        memory::AreaFrameAllocator::new(kernel_end_addr);
+    
+    //TODO: Wrap kernel_alloc in a LockedFrameAllocator so
+    //      other parts of the kernal can access and use it
 
-    //TODO: This guy should be placed at the start of the kernel
-    //      memory and use some of it for book-keeping.
-    let frame_allocator 
-        = memory::AreaFrameAllocator::new(kernel_end_addr);
+    // This is basically the replacement for kmalloc 
+    HEAP_ALLOCATOR.init(kernel_alloc);
 
-    // TODO: Update this to use the frame allocator - this 
-    // is basically the replacement for kmalloc 
-    HEAP_ALLOCATOR.lock().init(heap_start, heap_end);
+    // Heap Test
+    //----------------------
+    // let mut vec_test = vec![1,2,3,4,5,6,7];
+    // vec_test[3] = 42;
 
-    //Turn off identity mapping!
-    arm::reset_ttbr0_el1();
+    // for i in 0..1098 {
+    //     vec_test.push(1);
+    // }
 
+    // for i in &vec_test {
+    //     write!(kwriter::WRITER,"{} ", i);
+    // }
+
+    // write!(
+    //     kwriter::WRITER, 
+    //     "Pushed some vec\n");
+    //----------------------
+
+    // Global Kernel Page Table
+    //----------------------
     //TODO: Move this into a static variable - there is only 1 true kernel page table
     // Read our bootstrap page table
     // extern "C" {
@@ -100,6 +126,10 @@ pub unsafe extern "C" fn kmain()
     //------------------------------------------------
     //TODO: This should be all fixed up to use UserAddress or KernelAddress
     let addr = 42 * 512 * 512 * 4096; 
+
+    // This manages pageable memory
+    let frame_allocator
+        = &mut *memory::AreaFrameAllocator::new(anon_mem_start);
 
     let add_space = memory::address_space::new();
 
