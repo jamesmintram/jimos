@@ -91,6 +91,20 @@ pub unsafe extern "C" fn kmain()
     KERNEL_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(kernel_end_addr));
     HEAP_ALLOCATOR.init(&KERNEL_FRAME_ALLOCATOR);
 
+    // TODO: Support for deallocate
+    //       Slab allocator 
+    //       Test to churn the heap 
+    //          Should crash before we implement dealloc
+    //          Should not crash after we implement dealloc
+    //
+    //      Virtual Address Space manager
+    //          Add/Remove areas
+    //          Split/Merge
+    //          Fault handler
+    //
+    //      Test
+    //          Kernel address fault = kernel panic
+
     // Heap Test
     //----------------------
     // let mut vec_test = vec![1,2,3,4,5,6,7];
