@@ -15,6 +15,7 @@ use self::paging::Page;
 use self::paging::translate_page;
 
 pub use self::area_frame_allocator::AreaFrameAllocator;
+pub use self::area_frame_allocator::LockedAreaFrameAllocator;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Frame {

@@ -3,6 +3,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 
 use memory;
 use memory::FrameAllocator;
+use memory::LockedAreaFrameAllocator;
 use memory::AreaFrameAllocator;
 
 use alloc::boxed::Box;
@@ -23,7 +24,7 @@ pub struct BumpAllocator {
     heap_end: usize,
     next: AtomicUsize,
 
-    allocator: Box<AreaFrameAllocator>,
+    allocator: LockedAreaFrameAllocator,
 }
 
 impl BumpAllocator 
@@ -34,7 +35,7 @@ impl BumpAllocator
             heap_start: 0,
             heap_end: 0,
             next: AtomicUsize::new(0),
-            allocator: allocator,
+            allocator: LockedAreaFrameAllocator::new(allocator),
         }
     }
 
@@ -43,6 +44,7 @@ impl BumpAllocator
         //let fa = &mut self.allocator.lock();
         // let ff = fa.expect("Mem not inited");
         let new_frame = self.allocator
+            .lock()
             .allocate_frame()
             .expect("No more darta");
 

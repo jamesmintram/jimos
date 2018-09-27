@@ -49,3 +49,28 @@ impl FrameAllocator for AreaFrameAllocator {
     }
 }
 
+//------------------------------------------------------------------------
+use alloc::alloc::{GlobalAlloc, Layout};
+use core::ops::Deref;
+use spin::Mutex;
+
+#[derive(Debug)]
+pub struct LockedAreaFrameAllocator(Mutex<Box<AreaFrameAllocator>>);
+
+impl LockedAreaFrameAllocator {
+    //NOTE: NOTE THREAD SAFE!
+    pub fn new(allocator: Box<AreaFrameAllocator>) -> Self {
+        Self {
+            0: Mutex::new(allocator)
+        } 
+    }
+}
+
+impl Deref for LockedAreaFrameAllocator {
+    type Target = Mutex<Box<AreaFrameAllocator>>;
+
+    fn deref(&self) -> &Mutex<Box<AreaFrameAllocator>> {
+        &self.0
+    }
+}
+ 
