@@ -55,21 +55,23 @@ use core::ops::Deref;
 use spin::Mutex;
 
 #[derive(Debug)]
-pub struct LockedAreaFrameAllocator(Mutex<Box<AreaFrameAllocator>>);
+pub struct LockedAreaFrameAllocator(Mutex<Option<Box<AreaFrameAllocator>>>);
 
 impl LockedAreaFrameAllocator {
     //NOTE: NOTE THREAD SAFE!
-    pub fn new(allocator: Box<AreaFrameAllocator>) -> Self {
-        Self {
-            0: Mutex::new(allocator)
-        } 
+    pub const fn empty() -> LockedAreaFrameAllocator {
+        LockedAreaFrameAllocator(Mutex::new(None))
+    }
+
+    pub fn init(&mut self, allocator: Box<AreaFrameAllocator>) {
+        self.0 = Mutex::new(Some(allocator));
     }
 }
 
 impl Deref for LockedAreaFrameAllocator {
-    type Target = Mutex<Box<AreaFrameAllocator>>;
+    type Target = Mutex<Option<Box<AreaFrameAllocator>>>;
 
-    fn deref(&self) -> &Mutex<Box<AreaFrameAllocator>> {
+    fn deref(&self) -> &Mutex<Option<Box<AreaFrameAllocator>>> {
         &self.0
     }
 }

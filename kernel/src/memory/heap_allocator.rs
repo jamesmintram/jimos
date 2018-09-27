@@ -24,18 +24,19 @@ pub struct BumpAllocator {
     heap_end: usize,
     next: AtomicUsize,
 
-    allocator: LockedAreaFrameAllocator,
+    //TODO: Fix the lifetime
+    allocator: &'static LockedAreaFrameAllocator,
 }
 
 impl BumpAllocator 
 {
-    pub fn new(allocator: Box<AreaFrameAllocator>) -> Self 
+    pub fn new(allocator: &'static LockedAreaFrameAllocator) -> Self 
     {
         Self {
             heap_start: 0,
             heap_end: 0,
             next: AtomicUsize::new(0),
-            allocator: LockedAreaFrameAllocator::new(allocator),
+            allocator:  allocator,
         }
     }
 
@@ -43,13 +44,20 @@ impl BumpAllocator
         
         //let fa = &mut self.allocator.lock();
         // let ff = fa.expect("Mem not inited");
-        let new_frame = self.allocator
-            .lock()
-            .allocate_frame()
-            .expect("No more darta");
+        let mut lock = self.allocator.lock();
 
-        let addr = memory::physical_to_kernel(new_frame.start_address());
-        return addr as *mut u8;
+        if let Some(ref mut allocator) = *lock {
+            let new_frame = allocator
+                .allocate_frame()
+                .expect("No more darta");
+
+            let addr = memory::physical_to_kernel(new_frame.start_address());
+            return addr as *mut u8;
+        }
+
+        panic!();
+
+        
 
 
         // loop {
@@ -104,7 +112,7 @@ impl LockedHeap {
     }
 
     //NOTE: NOTE THREAD SAFE!
-    pub fn init(&mut self, allocator: Box<AreaFrameAllocator>) {
+    pub fn init(&mut self, allocator:  &'static LockedAreaFrameAllocator) {
         self.0 = Mutex::new(Some(BumpAllocator::new(allocator)));
     }
 }
