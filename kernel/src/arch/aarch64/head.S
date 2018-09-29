@@ -256,8 +256,34 @@ entered_1:
 	msr ttbr1_el1, x20
   msr ttbr0_el1, x20
 
-  adrp x20, __page_tables_start
+  mov x20, xzr
+
+  //Autodetect and set IPS
+  mrs x18, id_aa64mmfr0_el1
+  and x18, x18, 0xF
+  lsl x18, x18, 32
+  orr x20, x20, x18
+
+  //orr x20, x20, 0b10 << 30
+  orr x20, x20, 0b11 << 28
+  orr x20, x20, 0b01 << 26
+  orr x20, x20, 0b01 << 24
+
+  mov x18, #25 << 16    //25 = 0001 1001
+  //orr x20, x20, x18
+
+  orr x20, x20, 0b11 << 12
+  orr x20, x20, 0b01 << 10
+  orr x20, x20, 0b01 << 8
+
+  mov x18, #25 << 0
+  //orr x20, x20, x18
+
+  //adrp x20, __page_tables_start
 	msr tcr_el1, x20
+
+  //0xb5193519
+  //0000 0000 1011 0101 0001 1001 0011 0101 0001 1001
 
   // TEMP:
   //mov w0, 0x18
@@ -281,8 +307,23 @@ jump_prep:
 	dsb ish
   isb
 
+
+  mov x2, xzr
+  orr x2, x2, #1 << 25
+  orr x2, x2, #1 << 24
+  orr x2, x2, #1 << 19
+  orr x2, x2, #1 << 12
+  
+  orr x2, x2, #1 << 4
+  orr x2, x2, #1 << 3
+  orr x2, x2, #1 << 2
+  orr x2, x2, #1 << 1
+  
+
   ldr x1, =0xC00800
-  orr x1, x1, 0x1
+  bic x1, x1, x2
+  orr x1, x1, #1 << 0
+
   msr sctlr_el1, x1
 
   isb
