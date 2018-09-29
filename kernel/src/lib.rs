@@ -39,6 +39,7 @@ use memory::FrameAllocator;
 use memory::paging::Page;
 use memory::paging::entry::EntryFlags;
 use memory::heap_allocator::LockedHeap;
+use memory::LockedAreaFrameAllocator;
 
 
 
@@ -58,6 +59,10 @@ extern "C" {
 //--------------------------------------------------------------------
 //pub const HEAP_START: usize = 1024 * 1024 * 256; // 256MB for now
 pub const HEAP_SIZE: usize = 1024 * 1024 * 256; // 256MB for now
+
+
+
+static mut KERNEL_FRAME_ALLOCATOR: LockedAreaFrameAllocator = LockedAreaFrameAllocator::empty();
 
 #[global_allocator]
 static mut HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
@@ -83,15 +88,22 @@ pub unsafe extern "C" fn kmain()
     let heap_start = kernel_end_addr + memory::KERNEL_ADDRESS_START;
     let heap_end = heap_start + HEAP_SIZE;
     
-    // This manages pageable memory
-    let kernel_alloc  =
-        memory::AreaFrameAllocator::new(kernel_end_addr);
-    
-    //TODO: Wrap kernel_alloc in a LockedFrameAllocator so
-    //      other parts of the kernal can access and use it
+    KERNEL_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(kernel_end_addr));
+    HEAP_ALLOCATOR.init(&KERNEL_FRAME_ALLOCATOR);
 
-    // This is basically the replacement for kmalloc 
-    HEAP_ALLOCATOR.init(kernel_alloc);
+    // TODO: Support for deallocate
+    //       Slab allocator 
+    //       Test to churn the heap 
+    //          Should crash before we implement dealloc
+    //          Should not crash after we implement dealloc
+    //
+    //      Virtual Address Space manager
+    //          Add/Remove areas
+    //          Split/Merge
+    //          Fault handler
+    //
+    //      Test
+    //          Kernel address fault = kernel panic
 
     
 
@@ -111,6 +123,14 @@ pub unsafe extern "C" fn kmain()
     write!(
         kwriter::WRITER, 
         "Pushed some vec\n");
+
+    // // Deadlock test TODO: Make this pass
+    // if let Some(ref mut allocator) = *KERNEL_FRAME_ALLOCATOR.lock() {
+    //     if let Some(ref mut _allocator) = *KERNEL_FRAME_ALLOCATOR.lock() {
+    //         allocator.allocate_frame();
+    //     }
+    // }   
+
     //----------------------
 
     return;
