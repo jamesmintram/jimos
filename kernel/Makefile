@@ -16,7 +16,7 @@ RUST_RELEASE_LIB := $(RUST_BUILD_DIR)/release/lib$(RUST_BINARY).a
 
 RUST_DEPS = Xargo.toml Cargo.toml build.rs $(LD_LAYOUT) src/*
 # EXT_DEPS = $(BUILD_DIR)/crt0.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/head.o
-EXT_DEPS = $(BUILD_DIR)/head.o $(BUILD_DIR)/crt0.o $(BUILD_DIR)/exceptions.o
+EXT_DEPS = $(BUILD_DIR)/head.o $(BUILD_DIR)/crt0.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/jtag.o
 
 BUILD_DIR := build
 KERNEL := $(BUILD_DIR)/$(RUST_BINARY)
@@ -67,8 +67,12 @@ $(BUILD_DIR)/head.o: src/arch/aarch64/head.S | $(BUILD_DIR)
 $(BUILD_DIR)/crt0.o: src/arch/aarch64/crt0.S | $(BUILD_DIR)
 	@echo "+ Building $@ [cc $<]"
 	@$(CC) $(CCFLAGS) -c $< -o $@
-	
+
 $(BUILD_DIR)/exceptions.o: src/arch/aarch64/exceptions.S | $(BUILD_DIR)
+	@echo "+ Building $@ [cc $<]"
+	@$(CC) $(CCFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/jtag.o: src/arch/aarch64/jtag.c | $(BUILD_DIR)
 	@echo "+ Building $@ [cc $<]"
 	@$(CC) $(CCFLAGS) -c $< -o $@
 

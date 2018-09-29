@@ -59,6 +59,7 @@ fn exception_from_esr(esr: u32) -> Exception {
     }
 }
 
+
 //TODO: This is temporary
 fn remap(process: &process::Process)
 {    
@@ -79,16 +80,39 @@ fn data_abort(
 	 */
 	arm::clrex();
 
+    //TODO: Handle the "fault status code" - 
+    // https://yurichev.com/mirrors/ARMv8-A_Architecture_Reference_Manual_(Issue_A.a).pdf
+    // p. 1528
+
+    dump_regs(&frame);
+
     let fault_address = virtual_address::from_u64(far);
 
     //TODO: Call memory::page::PageFault(darta);
+    //TODO: Check for permission issue if page fault
+    if let Some(address) = fault_address {
+        match address {
+            virtual_address::VirtualAddress::User(addr) => {
+                write!(
+                    kwriter::WRITER,
+                    "Fault address: {:?}\n",
+                    addr);   
+                remap(process);
+            },
 
-    write!(
-        kwriter::WRITER,
-        "Fault address: {:?}\n",
-        fault_address);    
-
-    remap(process);
+            virtual_address::VirtualAddress::Kernel(addr) => {
+                write!(
+                    kwriter::WRITER,
+                    "Kernel Page Fault: 0x{:X}\n", far);    
+                    panic!("Unkown address");    
+            },
+        } 
+    } else {
+        write!(
+            kwriter::WRITER,
+            "Invalid address: 0x{:X}\n", far);    
+            panic!("Unkown address");
+    }
 
     //TODO: Check for success
     //TODO: Rewrite as handle_page_fault(..blah)
@@ -102,6 +126,8 @@ pub unsafe extern "C" fn do_el1h_sync(
     let frame = &*frame_ptr;
     let exception = exception_from_esr(frame.tf_esr);
     let process = process::get_current_process();
+
+
 
     match exception {
         //TODO: Match on all data aborts

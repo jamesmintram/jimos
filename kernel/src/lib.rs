@@ -76,7 +76,7 @@ pub unsafe extern "C" fn kmain()
     let kernel_end_addr =  (&kernel_end as *const _) as usize;
 
     write!(kwriter::WRITER, "Kernel ends at {}\n", kernel_end_addr);
-    
+
     // Initialise the heap
     let anon_mem_start = kernel_end_addr + HEAP_SIZE;
 
@@ -93,23 +93,27 @@ pub unsafe extern "C" fn kmain()
     // This is basically the replacement for kmalloc 
     HEAP_ALLOCATOR.init(kernel_alloc);
 
+    
+
     // Heap Test
     //----------------------
-    // let mut vec_test = vec![1,2,3,4,5,6,7];
-    // vec_test[3] = 42;
+    let mut vec_test = vec![1,2,3,4,5,6,7];
+    vec_test[3] = 42;
 
-    // for i in 0..1098 {
-    //     vec_test.push(1);
-    // }
+    for i in 0..1098 {
+        vec_test.push(1);
+    }
 
-    // for i in &vec_test {
-    //     write!(kwriter::WRITER,"{} ", i);
-    // }
+    for i in &vec_test {
+        write!(kwriter::WRITER,"{} ", i);
+    }
 
-    // write!(
-    //     kwriter::WRITER, 
-    //     "Pushed some vec\n");
+    write!(
+        kwriter::WRITER, 
+        "Pushed some vec\n");
     //----------------------
+
+    return;
 
     // Global Kernel Page Table
     //----------------------
@@ -180,20 +184,23 @@ pub unsafe extern "C" fn kmain()
     let data : *mut usize = addr as *mut usize;
 
     memory::activate_el0(process1.page_table);
-    
-    *data = 1024;
-    write!(
-        kwriter::WRITER, 
-        "UPT1: Data at data: 0x{:X?}\n", 
-        *data);
 
-    memory::activate_el0(user_table2);
+    //TODO GET WORKING ON HARDWARE    
+    // *data = 1024;
+    // write!(
+    //     kwriter::WRITER, 
+    //     "UPT1: Data at data: 0x{:X?}\n", 
+    //     *data);
 
-    write!(
-        kwriter::WRITER, 
-        "Data at data: 0x{:X?}\n", 
-        *data);
-    
+    // memory::activate_el0(user_table2);
+
+    // write!(
+    //     kwriter::WRITER, 
+    //     "Data at data: 0x{:X?}\n", 
+    //     *data);
+    //TODO GET WORKING ON HARDWARE
+
+
     // memory::activate_el0(user_table1);
 
     // write!(

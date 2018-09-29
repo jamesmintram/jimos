@@ -1,0 +1,6 @@
+*~
+*.d
+*.o
+*.elf
+*.img
+raspbootcom/raspbootcom

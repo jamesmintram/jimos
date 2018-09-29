@@ -16,7 +16,13 @@ __start_ram:
   b		  __hang
 
 __start_master:
+  //Hacky - but we use the Page table space as a stack for now
+  adrp	x2, boot_end
+  add	  x2, x2, #:lo12:boot_end
 
+  mov	  sp, x2
+  
+  bl enable_jtag
 
 //--------------------------------------------------------
 // Drop down to EL1
@@ -117,11 +123,13 @@ entered_1:
   adrp x20, __page_tables_start
   adrp x21, __page_tables_size
 
+  lsr x21, x21, #4
+
   // Set all page table memory to zero
 1:sub x21, x21, #2
-  add x20, x20, #2
 
   stp xzr, xzr, [x20]
+  add x20, x20, #16
 
   cbnz x21, 1b
 
@@ -196,6 +204,8 @@ entered_1:
 
 	orr x21, x21, MM_ACCESS
 	orr x21, x21, MM_TABLE_DESCRIPTOR
+  orr x21, x21, PT_ISH
+
 
   ldr x23, =0x3EFFFFFF              // End of physical mapping
   mov x22, #0                       // L4[i] Entry counter
@@ -211,6 +221,8 @@ entered_1:
   ldr x21, =0x3F000000
 	orr x21, x21, MM_ACCESS
 	orr x21, x21, MM_TABLE_DESCRIPTOR
+  orr x21, x21, PT_OSH
+  orr x21, x21, PT_DEV
   //TODO: Setup MAIR reference
 
   ldr x23, =0x3FFFFFFF          // End of MMIO
@@ -229,10 +241,11 @@ entered_1:
   mov x20, xzr
 
   //MT_DEVICE_NORMAL
-  mov x21, 0b01000100       // 0x44
+  //mov x21, 0b01000100       // 0x44
+  mov x21, 0xFF       
   orr x20, x20, x21         // Mair IDX 0
 
-  mov x21, 0b00000100       //0x04
+  mov x21, 0b00000100       // 0x04
   orr x20, x20, x21, lsl #8 // Mair IDX 1
 
 	msr mair_el1, x20
@@ -259,6 +272,7 @@ entered_1:
 	ldr     x0, =_vectors
 	msr     vbar_el1, x0
 
+jump_prep:
   // Now load up the code to jump to
   ldr x0, =enter_virtual_addressing
 

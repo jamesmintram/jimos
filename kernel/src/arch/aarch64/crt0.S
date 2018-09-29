@@ -15,12 +15,15 @@ __clear_bss:
 
 __clear:
   str	xzr, [x0]
-  add	x0, x0, #1
+  add	x0, x0, #4
 
   cmp x0, x1
 	b.ls	__clear
 
 __go_main:
+
+
+
   bl	kmain
 
 
@@ -50,7 +53,8 @@ __hang:
 
 .global exit
 exit:
-  // b __hang
+  //TODO: Configure this differently for Qemu vs Silicone
+  b __hang
   mov w0, 0x18
   mov x1, #0x20000
   add x1, x1, #0x26

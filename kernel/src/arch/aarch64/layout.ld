@@ -5,9 +5,7 @@ MEMORY {
 
 SECTIONS {
   kernel_va_base = 0xFFFF000000000000;
-  kernel_page_size = 4K;
-
-  
+  kernel_page_size = 4K; 
 
   /* boot_end = (ADDR(.boot.text) + SIZEOF (.boot.text));  */
 
@@ -28,14 +26,17 @@ SECTIONS {
         . = 0x80000;  /* Space for command line.  */
 
         KEEP(build/head.o (.text))
+	KEEP(build/jtag.o (.text))
   }
 
   .boot.data : {
     build/head.o (.data)
+    build/jtag.o (.data)
   }
 
   .boot.bss  (NOLOAD) : {
     build/head.o (.bss)
+    build/jtag.o (.data)
   }
 
 

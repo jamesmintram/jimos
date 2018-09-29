@@ -16,6 +16,13 @@
 #define MM_BLOCK_DESCRIPTOR  0b01
 #define MM_TABLE_DESCRIPTOR  0b11
 
+// shareability
+#define PT_OSH  (2<<8)      // outter shareable
+#define PT_ISH  (3<<8)      // inner shareable
+
+#define PT_MEM  (0<<2)      // normal memory
+#define PT_DEV  (1<<2)      // device memory 
+
 
 #define VA_START          0xFFFF000000000000
 
@@ -27,3 +34,14 @@
 #define TCR_TG0_4K			(0 << 14)
 #define TCR_TG1_4K			(2 << 30)
 #define TCR_VALUE	(TCR_T0SZ | TCR_T1SZ | TCR_TG0_4K | TCR_TG1_4K)
+
+
+#define PERI_BASE	(0x3F000000)
+#define GPPUD	    (PERI_BASE + 0x00200094)
+
+#define GPPUDCLK0	(PERI_BASE + 0x00200098)
+
+#define GPFSEL_PIN_MASK			(7U)//(BIT(2) | BIT(1) | BIT(0))
+#define GPFSEL_ALT_4			(3U)//(BIT(1) | BIT(0))
+
+#define GPFSEL2	(PERI_BASE + 0x00200008)
