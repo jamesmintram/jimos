@@ -24,6 +24,7 @@ __start_master:
   
   bl enable_jtag
 
+
 //--------------------------------------------------------
 // Drop down to EL1
 
@@ -115,11 +116,9 @@ __start_master:
 //  This is the point where our kernel starts
 //--------------------------------------------------------
 entered_1:
+  // Enable the MMU
 
-  // First thing to do is enable the MMU
-
-  // Memset all of it to 0
-
+  // Clean page tables
   adrp x20, __page_tables_start
   adrp x21, __page_tables_size
 
@@ -223,7 +222,6 @@ entered_1:
 	orr x21, x21, MM_TABLE_DESCRIPTOR
   orr x21, x21, PT_OSH
   orr x21, x21, PT_DEV
-  //TODO: Setup MAIR reference
 
   ldr x23, =0x3FFFFFFF          // End of MMIO
 
@@ -242,7 +240,7 @@ entered_1:
 
   //MT_DEVICE_NORMAL
   //mov x21, 0b01000100       // 0x44
-  mov x21, 0xFF       
+  mov x21, 0xFF             
   orr x20, x20, x21         // Mair IDX 0
 
   mov x21, 0b00000100       // 0x04
@@ -258,41 +256,27 @@ entered_1:
 
   mov x20, xzr
 
-  //Autodetect and set IPS
-  mrs x18, id_aa64mmfr0_el1
-  and x18, x18, 0xF
-  lsl x18, x18, 32
-  orr x20, x20, x18
 
   //orr x20, x20, 0b10 << 30
   orr x20, x20, 0b11 << 28
   orr x20, x20, 0b01 << 26
   orr x20, x20, 0b01 << 24
 
-  mov x18, #25 << 16    //25 = 0001 1001
+  //mov x18, #25 << 16    //25 = 0001 1001
   //orr x20, x20, x18
 
   orr x20, x20, 0b11 << 12
   orr x20, x20, 0b01 << 10
   orr x20, x20, 0b01 << 8
 
-  mov x18, #25 << 0
+  //mov x18, #25 << 0
   //orr x20, x20, x18
+  
+	// Setup TCR according to PARange bits from ID_AA64MMFR0_EL1.
+  mrs x3, id_aa64mmfr0_el1
+  bfi	x20, x3, #32, #3
 
-  //adrp x20, __page_tables_start
 	msr tcr_el1, x20
-
-  //0xb5193519
-  //0000 0000 1011 0101 0001 1001 0011 0101 0001 1001
-
-  // TEMP:
-  //mov w0, 0x18
-	//mov x1, #0x20000
-	//add x1, x1, #0x26
-	//hlt #0xF000
-
-  // b __hang
-
 
   // set up exception handlers in VA space
 	ldr     x0, =_vectors
@@ -307,39 +291,29 @@ jump_prep:
 	dsb ish
   isb
 
-
-  mov x2, xzr
-  orr x2, x2, #1 << 25
-  orr x2, x2, #1 << 24
-  orr x2, x2, #1 << 19
-  orr x2, x2, #1 << 12
-  
-  orr x2, x2, #1 << 4
-  orr x2, x2, #1 << 3
-  orr x2, x2, #1 << 2
-  orr x2, x2, #1 << 1
-  
-
   ldr x1, =0xC00800
-  bic x1, x1, x2
-  orr x1, x1, #1 << 0
+  orr x1, x1, #1 << 12 // Enable I-cache
+  orr x1, x1, #1 << 2  // Enable D-cache
+  orr x1, x1, #1 << 0  // Enable MMU
 
   msr sctlr_el1, x1
 
+  
+	
+  dsb ish
   isb
 
+//  tlbi alle1
+//  isb
   //mov w0, 0x18
 	//mov x1, #0x20000
 	//add x1, x1, #0x26
 	//hlt #0xF000
 
-
-
-  	//ldr x0,  =(VA_START | 0x00200000)
-	  //ldr x0, [x0]
+  //ldr x0,  =(VA_START | 0x00200000)
+  //ldr x0, [x0]
 
   br x0
-
 
   // TODO: update the system register
   // TODO: ISB

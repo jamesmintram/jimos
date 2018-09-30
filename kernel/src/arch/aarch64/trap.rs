@@ -84,7 +84,7 @@ fn data_abort(
     // https://yurichev.com/mirrors/ARMv8-A_Architecture_Reference_Manual_(Issue_A.a).pdf
     // p. 1528
 
-    dump_regs(&frame);
+    dump_regs(&_frame);
 
     let fault_address = virtual_address::from_u64(far);
 

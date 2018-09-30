@@ -70,12 +70,15 @@ static mut HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
 #[no_mangle]
 pub unsafe extern "C" fn kmain()
 {
-    //Turn off identity mapping in EL0
-    arm::reset_ttbr0_el1();
-
+    arm::reset_ttbr0_el1(); //Turn off identity mapping in EL0
+    arm::cache_setup();     
+    
     uart::uart_init();
 
     write!(kwriter::WRITER, "UART init\n");
+    
+    arm::print_cache_info();
+
     write!(kwriter::WRITER, "Building kernel page tables\n");
 
     let kernel_end_addr =  (&kernel_end as *const _) as usize;
@@ -109,20 +112,20 @@ pub unsafe extern "C" fn kmain()
 
     // Heap Test
     //----------------------
-    let mut vec_test = vec![1,2,3,4,5,6,7];
-    vec_test[3] = 42;
+    // let mut vec_test = vec![1,2,3,4,5,6,7];
+    // vec_test[3] = 42;
 
-    for i in 0..1098 {
-        vec_test.push(1);
-    }
+    // for i in 0..1098 {
+    //     vec_test.push(1);
+    // }
 
-    for i in &vec_test {
-        write!(kwriter::WRITER,"{} ", i);
-    }
+    // for i in &vec_test {
+    //     write!(kwriter::WRITER,"{} ", i);
+    // }
 
-    write!(
-        kwriter::WRITER, 
-        "Pushed some vec\n");
+    // write!(
+    //     kwriter::WRITER, 
+    //     "Pushed some vec\n");
 
     // // Deadlock test TODO: Make this pass
     // if let Some(ref mut allocator) = *KERNEL_FRAME_ALLOCATOR.lock() {
@@ -133,7 +136,6 @@ pub unsafe extern "C" fn kmain()
 
     //----------------------
 
-    return;
 
     // Global Kernel Page Table
     //----------------------

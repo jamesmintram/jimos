@@ -1,9 +1,9 @@
-
+use arch::aarch64::arm;
 
 // Public mailbox
 //--------------------------------------------------------------------
 use gpio;
-
+use core;
 
 
 #[inline(always)]
@@ -62,6 +62,9 @@ pub fn mbox_call(channel: MboxChannel, message: &mut MboxMessage) -> bool {
     
     //TODO: Possible to set something as volatile?
     let chars: *mut u32 = &mut message.data[0] as *mut u32;
+    arm::cache_clean_range(chars as usize, core::mem::size_of::<MboxMessage>());
+    
+    //TODO: "Cache" clean
     //TODO: Assert that (chars & !0xF) == chars (ie - data is correctly aligned)
 
     unsafe {
