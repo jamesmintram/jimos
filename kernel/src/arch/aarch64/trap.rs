@@ -153,14 +153,14 @@ fn dump_regs(frame: &frame::TrapFrame)
 {
     // borrow of packed field is unsafe and requires unsafe function or block
     unsafe {
-        write!(kwriter::WRITER,"SP: {:X?}  {}\n", frame.tf_sp, frame.tf_sp);
-        write!(kwriter::WRITER,"LR: {:X?}  {}\n", frame.tf_lr, frame.tf_lr);
-        write!(kwriter::WRITER,"ELR: {:X?}  {}\n", frame.tf_elr, frame.tf_elr);
-        write!(kwriter::WRITER,"SPSR: {:X?}  {}\n", frame.tf_spsr, frame.tf_spsr);
-        write!(kwriter::WRITER,"ESR: {:X?}  {}\n", frame.tf_esr, frame.tf_esr);
+        write!(kwriter::WRITER,"SP: {:X}  {}\n", frame.tf_sp, frame.tf_sp);
+        write!(kwriter::WRITER,"LR: {:X}  {}\n", frame.tf_lr, frame.tf_lr);
+        write!(kwriter::WRITER,"ELR: {:X}  {}\n", frame.tf_elr, frame.tf_elr);
+        write!(kwriter::WRITER,"SPSR: {:X}  {}\n", frame.tf_spsr, frame.tf_spsr);
+        write!(kwriter::WRITER,"ESR: {:X}  {}\n", frame.tf_esr, frame.tf_esr);
 
         for i in 0..30  {
-            write!(kwriter::WRITER,"X{}: {:X?}\n", i, frame.tf_x[i]);
+            write!(kwriter::WRITER,"X{}: {:X}\n", i, frame.tf_x[i]);
         }
     }
 }

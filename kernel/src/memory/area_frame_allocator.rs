@@ -1,31 +1,92 @@
 use memory;
 use memory::{Frame, FrameAllocator};
 
+use core::mem::size_of;
+use core::slice;
 use alloc::boxed::Box;
+
+use core::fmt;
+
+pub struct PageFrameData {
+    inUse: bool,
+    spec: bool,
+}
+
+struct PageFrameDataArray {
+    ptr: *mut PageFrameData,
+    len: usize,
+}
+
+impl fmt::Debug for PageFrameDataArray {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "0x{:?}", self.ptr)
+    }
+}
+
+impl core::ops::Deref for PageFrameDataArray {
+    type Target = [PageFrameData];
+
+    fn deref(&self) -> &[PageFrameData] {
+        unsafe { slice::from_raw_parts(self.ptr, self.len) }
+    }
+}
+
 
 #[derive(Debug)]
 pub struct AreaFrameAllocator {
     next_free_frame: Frame,
+    last_frame: Frame,
+    page_frame_data: PageFrameDataArray,
 }
 
 impl AreaFrameAllocator {
     //
     //  Accepts the address from which it can start allocating from
     //
-    pub fn new<'a> (physical_start_address: usize) -> Box<AreaFrameAllocator> {
+    pub fn new<'a> (physical_start_address: usize, physical_end_address: usize) -> Box<AreaFrameAllocator> {
 
         let allocator_va = memory::physical_to_kernel(physical_start_address);
         let allocator_ptr = allocator_va as *mut AreaFrameAllocator;
-        
-        //We actually need a box here
         let mut allocator = unsafe {Box::from_raw(allocator_ptr)};
 
-        let allocator_memory = 1024 * 16;    //16KB TEMP (Allocator data)
+        let allocator_first_frame = Frame::containing_address(physical_start_address);
+        let heap_last_frame = Frame::containing_address(physical_end_address);
 
-        let physical_heap_start_address = physical_start_address + allocator_memory;
-        let first_frame = Frame::containing_address(physical_heap_start_address);
+        let page_frame_count = heap_last_frame.number - allocator_first_frame.number;
+        
+        let page_frame_data_address = physical_start_address + size_of::<AreaFrameAllocator>();
+        let page_frame_data_array_size = size_of::<PageFrameData>() * page_frame_count;
 
-        allocator.next_free_frame = first_frame;
+        let physical_heap_start_address = page_frame_data_address + page_frame_data_array_size;
+        let heap_first_frame = Frame::containing_address(physical_heap_start_address);
+        
+        let allocator_size = page_frame_data_array_size + size_of::<AreaFrameAllocator>();
+
+        //TODO: Nasty hack - but I cannot do maths at this time in the morning
+        //      This is to account for the fact that memory is used by the allocator
+        let adjusted_heap_last_frame = Frame::containing_address(physical_end_address - allocator_size);
+        let adjusted_page_frame_count = adjusted_heap_last_frame.number - allocator_first_frame.number;
+
+        assert!(adjusted_page_frame_count > 0);
+
+        allocator.next_free_frame = heap_first_frame;
+        allocator.last_frame = adjusted_heap_last_frame;
+        allocator.page_frame_data = PageFrameDataArray{
+            ptr: page_frame_data_address as *mut PageFrameData,
+            len: adjusted_page_frame_count,
+        };
+
+
+        use kwriter;
+        use core::fmt::Write;
+
+        write!(kwriter::WRITER, "Allocator\n",);
+        write!(kwriter::WRITER, "\tFirst page frame: {}\n", allocator.next_free_frame.number);
+        write!(kwriter::WRITER, "\tLast page frame: {}\n",  allocator.last_frame.number);
+        write!(kwriter::WRITER, "\tPage frame count: {}\n", adjusted_page_frame_count);
+
+        write!(kwriter::WRITER, "\tAllocator size (bytes): {}\n", allocator_size);
+        write!(kwriter::WRITER, "\tAllocator size (page frames): {}\n", allocator_size / memory::PAGE_SIZE);
 
         allocator
     }   
@@ -33,7 +94,7 @@ impl AreaFrameAllocator {
 
 impl FrameAllocator for AreaFrameAllocator {
     fn allocate_frame(&mut self) -> Option<Frame> {
-        if self.next_free_frame.number < memory::TOTAL_PAGE_FRAMES 
+        if self.next_free_frame.number < self.last_frame.number 
         {
             let frame = Frame{number: self.next_free_frame.number};
          

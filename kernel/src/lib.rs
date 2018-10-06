@@ -63,6 +63,8 @@ pub const HEAP_SIZE: usize = 1024 * 1024 * 256; // 256MB for now
 
 
 static mut KERNEL_FRAME_ALLOCATOR: LockedAreaFrameAllocator = LockedAreaFrameAllocator::empty();
+static mut ANON_FRAME_ALLOCATOR: LockedAreaFrameAllocator = LockedAreaFrameAllocator::empty();
+
 
 #[global_allocator]
 static mut HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
@@ -85,13 +87,16 @@ pub unsafe extern "C" fn kmain()
 
     write!(kwriter::WRITER, "Kernel ends at {}\n", kernel_end_addr);
 
-    // Initialise the heap
-    let anon_mem_start = kernel_end_addr + HEAP_SIZE;
-
+    // Initialise the heaps
     let heap_start = kernel_end_addr + memory::KERNEL_ADDRESS_START;
     let heap_end = heap_start + HEAP_SIZE;
     
-    KERNEL_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(kernel_end_addr));
+    let anon_mem_start = heap_end;
+    let anon_mem_end = anon_mem_start + HEAP_SIZE;
+
+    KERNEL_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(kernel_end_addr, anon_mem_start));
+    ANON_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(anon_mem_start, anon_mem_end));
+
     HEAP_ALLOCATOR.init(&KERNEL_FRAME_ALLOCATOR);
 
     // TODO: Support for deallocate
@@ -154,37 +159,43 @@ pub unsafe extern "C" fn kmain()
     let addr = 42 * 512 * 512 * 4096; 
 
     // This manages pageable memory
-    let frame_allocator
-        = &mut *memory::AreaFrameAllocator::new(anon_mem_start);
+    // let frame_allocator
+    //     = &mut *memory::AreaFrameAllocator::new(anon_mem_start);
 
     let add_space = memory::address_space::new();
 
 
-    let (user_table1, frame_allocator) 
-        = memory::paging::table::new(frame_allocator);
+    let (user_table1, _) 
+        = memory::paging::table::new(&mut ANON_FRAME_ALLOCATOR);
     let mut process1 = process::Process{page_table: user_table1};
 
     {
-        let page = Page::containing_address(addr);
-        let frame = frame_allocator
-            .allocate_frame()
-            .expect("no more frames");
+        let mut lock = ANON_FRAME_ALLOCATOR.lock();
 
-        memory::paging::map_to(
-            process1.page_table, 
-            page, 
-            frame, 
-            EntryFlags::empty(), 
-            frame_allocator);
+        if let Some(ref mut allocator) = *lock {
+
+            let page = Page::containing_address(addr);
+            let frame = allocator
+                .allocate_frame()
+                .expect("no more frames");
+
+            memory::paging::map_to(
+                process1.page_table, 
+                page, 
+                frame, 
+                EntryFlags::empty(), 
+                allocator
+                );
+        }
     }
 
-    //TODO: Why doesn't borrow checker complain?
-    //TODO: This should also activate the "Process" page table
-    process::switch_process(&mut process1);
-    //process::switch_process(&mut process1);
+    // //TODO: Why doesn't borrow checker complain?
+    // //TODO: This should also activate the "Process" page table
+    // process::switch_process(&mut process1);
+    // //process::switch_process(&mut process1);
 
-    let (user_table2, _frame_allocator) 
-        = memory::paging::table::new(frame_allocator);
+    // let (user_table2, _frame_allocator) 
+    //     = memory::paging::table::new(frame_allocator);
 
     // {
     //     let page = Page::containing_address(addr);
@@ -200,12 +211,12 @@ pub unsafe extern "C" fn kmain()
     //         frame_allocator);
     // }
 
-    // Question: Are interrupts masked during a Sync Exception?
+    // // Question: Are interrupts masked during a Sync Exception?
 
-    // Test out the mapping
-    let data : *mut usize = addr as *mut usize;
+    // // Test out the mapping
+    // let data : *mut usize = addr as *mut usize;
 
-    memory::activate_el0(process1.page_table);
+    // memory::activate_el0(process1.page_table);
 
     //TODO GET WORKING ON HARDWARE    
     // *data = 1024;
