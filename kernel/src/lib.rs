@@ -165,7 +165,7 @@ pub unsafe extern "C" fn kmain()
 
 
     let create_table = || {
-        let mut lock = ANON_FRAME_ALLOCATOR.lock();
+        let mut lock = KERNEL_FRAME_ALLOCATOR.lock();
         
         if let Some(ref mut allocator) = *lock 
         {
@@ -177,7 +177,7 @@ pub unsafe extern "C" fn kmain()
 
 
     let mut create_process = |table| {
-        let mut lock = ANON_FRAME_ALLOCATOR.lock();
+        let mut lock = KERNEL_FRAME_ALLOCATOR.lock();
         
         if let Some(ref mut allocator) = *lock 
         {
@@ -188,7 +188,7 @@ pub unsafe extern "C" fn kmain()
     };          
 
     let mut map_address = |process: &mut process::Process, address| {
-        let mut lock = ANON_FRAME_ALLOCATOR.lock();
+        let mut lock = KERNEL_FRAME_ALLOCATOR.lock();
         
         if let Some(ref mut allocator) = *lock 
         {
@@ -244,7 +244,7 @@ pub unsafe extern "C" fn kmain()
 
     // Test out the mapping
     let data : *mut usize = addr1 as *mut usize;
-    
+
     process::switch_process(&mut process1);
     memory::activate_el0(process1.page_table);
 
