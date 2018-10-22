@@ -115,7 +115,7 @@ impl<L> IndexMut<usize> for Table<L> where L: TableLevel {
     }
 }
 
-pub fn new<A> (allocator: &mut A) -> (&mut Table<Level4>, &mut A)
+pub fn new<'a, 'b, A> (allocator: &'a mut A) -> &'b mut Table<Level4>
     where A: FrameAllocator
 {
     let new_pgt_frame = allocator
@@ -129,5 +129,5 @@ pub fn new<A> (allocator: &mut A) -> (&mut Table<Level4>, &mut A)
     let new_pgt_ptr: *mut Table<Level4> = new_pgt_virtual_address as *mut _;
     let new_pgt = unsafe { &mut (*new_pgt_ptr) };
 
-    (new_pgt, allocator)
+    new_pgt
 }

@@ -5,6 +5,10 @@ use core::mem::size_of;
 use core::slice;
 use alloc::boxed::Box;
 
+//use alloc::alloc::{GlobalAlloc, Layout};
+use spin::Mutex;
+use core::ops::Deref;
+
 use core::fmt;
 
 pub struct PageFrameData {
@@ -23,7 +27,7 @@ impl fmt::Debug for PageFrameDataArray {
     }
 }
 
-impl core::ops::Deref for PageFrameDataArray {
+impl Deref for PageFrameDataArray {
     type Target = [PageFrameData];
 
     fn deref(&self) -> &[PageFrameData] {
@@ -111,9 +115,7 @@ impl FrameAllocator for AreaFrameAllocator {
 }
 
 //------------------------------------------------------------------------
-use alloc::alloc::{GlobalAlloc, Layout};
-use core::ops::Deref;
-use spin::Mutex;
+
 
 #[derive(Debug)]
 pub struct LockedAreaFrameAllocator(Mutex<Option<Box<AreaFrameAllocator>>>);

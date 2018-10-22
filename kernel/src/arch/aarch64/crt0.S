@@ -54,7 +54,7 @@ __hang:
 .global exit
 exit:
   //TODO: Configure this differently for Qemu vs Silicone
-  b __hang
+  //b __hang
   mov w0, 0x18
   mov x1, #0x20000
   add x1, x1, #0x26

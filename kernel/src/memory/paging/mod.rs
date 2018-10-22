@@ -23,7 +23,7 @@ pub struct Page {
 
 impl Page {
     pub fn containing_address(address: VirtualAddress) -> Page {
-        assert!(address <= USER_ADDRESS_END || address >= KERNEL_ADDRESS_START, "Invalid address");
+        //assert!(address <= USER_ADDRESS_END || address >= KERNEL_ADDRESS_START, "Invalid address");
         Page{number: address / PAGE_SIZE}
     }
 
