@@ -1,8 +1,6 @@
 pub mod entry;
 pub mod table;
 
-use memory::KERNEL_ADDRESS_START;
-use memory::USER_ADDRESS_END;
 use memory::PAGE_SIZE; 
 use memory::Frame;
 use memory::FrameAllocator;

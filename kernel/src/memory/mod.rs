@@ -3,6 +3,7 @@ pub mod paging;
 pub mod heap_allocator;
 pub mod virtual_address;
 pub mod address_space;
+pub mod slab_allocator;
 
 use memory;
 use arch::aarch64::arm;
@@ -14,6 +15,7 @@ use self::paging::table::{Table, Level4};
 use self::paging::Page;
 use self::paging::translate_page;
 
+pub use self::area_frame_allocator::{alloc, alloct};
 pub use self::area_frame_allocator::AreaFrameAllocator;
 pub use self::area_frame_allocator::LockedAreaFrameAllocator;
 
@@ -55,6 +57,7 @@ impl Frame {
 
 pub trait FrameAllocator {
     fn allocate_frame(&mut self) -> Option<Frame>;
+    fn allocate_frames(&mut self, count:usize) -> Option<Frame>;
     fn deallocate_frame(&mut self, frame: Frame);
 }
 

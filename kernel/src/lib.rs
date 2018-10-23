@@ -38,14 +38,14 @@ use core::fmt::Write;
 use memory::FrameAllocator;
 use memory::paging::Page;
 use memory::paging::entry::EntryFlags;
-use memory::heap_allocator::LockedHeap;
 use memory::LockedAreaFrameAllocator;
+use memory::slab_allocator::LockedSlabHeap;
 
 
 
 //Temp
 use arch::aarch64::arm;
-use spin::Mutex;
+// use spin::Mutex;
 
 // Required here to make them accessable to ASM
 pub use syscall::int_syscall;
@@ -65,7 +65,8 @@ static mut ANON_FRAME_ALLOCATOR: LockedAreaFrameAllocator = LockedAreaFrameAlloc
 
 
 #[global_allocator]
-static mut HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
+static mut HEAP_ALLOCATOR: LockedSlabHeap = LockedSlabHeap::empty();
+//static mut HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
 
 #[no_mangle]
 pub unsafe extern "C" fn kmain()
@@ -97,6 +98,20 @@ pub unsafe extern "C" fn kmain()
 
     HEAP_ALLOCATOR.init(&KERNEL_FRAME_ALLOCATOR);
 
+    //TODO: Wrap HeapSlabAllocator in a Mutex and replace HEAP_ALLOCATOR
+    //      Implement alloc and release
+    //      Churn memory with old and see crash
+    //      Churn memory with new and see no crash
+    //      Periodically print stats
+    //
+    //
+    //  Book keeping for SlabAllocator
+    //  Naive way to release page frames 
+    //  
+    //
+    //TODO: Look below for the Address space stuff
+    //slab_allocator::HeapSlabAllocator::new(&KERNEL_FRAME_ALLOCATOR);
+
     // TODO: Support for deallocate
     //       Slab allocator 
     //       Test to churn the heap 
@@ -115,20 +130,20 @@ pub unsafe extern "C" fn kmain()
 
     // Heap Test
     //----------------------
-    // let mut vec_test = vec![1,2,3,4,5,6,7];
-    // vec_test[3] = 42;
+    let mut vec_test = vec![1,2,3,4,5,6,7];
+    vec_test[3] = 42;
 
-    // for i in 0..1098 {
-    //     vec_test.push(1);
-    // }
+    for i in 0..1098 {
+        vec_test.push(1);
+    }
 
-    // for i in &vec_test {
-    //     write!(kwriter::WRITER,"{} ", i);
-    // }
+    for i in &vec_test {
+        write!(kwriter::WRITER,"{} ", i);
+    }
 
-    // write!(
-    //     kwriter::WRITER, 
-    //     "Pushed some vec\n");
+    write!(
+        kwriter::WRITER, 
+        "Pushed some vec\n");
 
     // // Deadlock test TODO: Make this pass
     // if let Some(ref mut allocator) = *KERNEL_FRAME_ALLOCATOR.lock() {
@@ -161,14 +176,25 @@ pub unsafe extern "C" fn kmain()
     // let frame_allocator
     //     = &mut *memory::AreaFrameAllocator::new(anon_mem_start);
 
-    let add_space = memory::address_space::new();
 
+    //TODO: Create entry in process address space
+    //      Trigger a page fault
+    //      Fault handler 
+    //          finds page frame to back memory
+    //          updates process page table
+    //          continues
+    //
+    //      Unmapping a region of VA space?
+    //          Need to release refs to page frames
+    //          Need to remove from page table
 
+    // let add_space = memory::address_space::new();
     let create_table = || {
         let mut lock = KERNEL_FRAME_ALLOCATOR.lock();
         
         if let Some(ref mut allocator) = *lock 
         {
+            //TODO: Refactor this so that we use memory::alloc(allocator)
             return memory::paging::table::new(&mut **allocator);
         }
 
@@ -176,18 +202,13 @@ pub unsafe extern "C" fn kmain()
     };
 
 
-    let mut create_process = |table| {
-        let mut lock = KERNEL_FRAME_ALLOCATOR.lock();
-        
-        if let Some(ref mut allocator) = *lock 
-        {
-            let mut newprocess = process::Process{page_table: table};
-            return newprocess;
-        }
-         panic!()
+    let create_process = |table| {
+        let newprocess = process::Process{page_table: table};
+        return newprocess;
     };          
 
-    let mut map_address = |process: &mut process::Process, address| {
+    //TODO: Refactor this so that we use memory::alloc(allocator)
+    let map_address = |process: &mut process::Process, address| {
         let mut lock = KERNEL_FRAME_ALLOCATOR.lock();
         
         if let Some(ref mut allocator) = *lock 
@@ -218,6 +239,9 @@ pub unsafe extern "C" fn kmain()
     map_address(&mut process1, addr2);
 
     let user_table2 = create_table();
+
+    //https://shop.pimoroni.com/products/hdmi-8-lcd-screen-kit-1024x768#description
+    
     // //TODO: Why doesn't borrow checker complain?
     // //TODO: This should also activate the "Process" page table
     
@@ -271,6 +295,10 @@ pub unsafe extern "C" fn kmain()
     //     "UPT1: Data at data: 0x{:X?}\n", 
     //     *data);
 
+    for i in 0..32 {
+        let mut vec_test = vec![1,2,3,4,5,6,7];
+        vec_test[3] = 42;
+    }
 
     let mut vec_test = vec![1,2,3,4,5,6,7];
     vec_test[3] = 42;

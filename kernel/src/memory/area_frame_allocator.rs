@@ -12,7 +12,7 @@ use core::ops::Deref;
 use core::fmt;
 
 pub struct PageFrameData {
-    inUse: bool,
+    in_use: bool,
     spec: bool,
 }
 
@@ -96,13 +96,21 @@ impl AreaFrameAllocator {
     }   
 }
 
-impl FrameAllocator for AreaFrameAllocator {
-    fn allocate_frame(&mut self) -> Option<Frame> {
-        if self.next_free_frame.number < self.last_frame.number 
+impl FrameAllocator for AreaFrameAllocator 
+{
+    fn allocate_frame(&mut self) -> Option<Frame> 
+    {
+        self.allocate_frames(1)
+    }
+
+    fn allocate_frames(&mut self, count:usize) -> Option<Frame> 
+    {
+        let next_frame_after_alloc = self.next_free_frame.number + count;
+        if next_frame_after_alloc < self.last_frame.number 
         {
             let frame = Frame{number: self.next_free_frame.number};
          
-            self.next_free_frame.number += 1;
+            self.next_free_frame.number += count;
 
             return Some(frame)
         }
@@ -129,6 +137,24 @@ impl LockedAreaFrameAllocator {
     pub fn init(&mut self, allocator: Box<AreaFrameAllocator>) {
         self.0 = Mutex::new(Some(allocator));
     }
+}
+
+pub fn alloc(frame_allocator: &LockedAreaFrameAllocator, frame_count: usize) -> *mut u8
+{
+    let mut lock = frame_allocator.lock();
+    if let Some(ref mut allocator) = *lock {
+        let new_frame = allocator
+            .allocate_frames(frame_count)
+            .expect("No more darta");
+        let addr = memory::physical_to_kernel(new_frame.start_address());
+        return addr as *mut u8;
+    }
+    panic!()
+}
+
+pub fn alloct<T>(allocator: &LockedAreaFrameAllocator, frame_count: usize) -> *mut T
+{
+    return alloc(allocator, frame_count) as *mut T;
 }
 
 impl Deref for LockedAreaFrameAllocator {

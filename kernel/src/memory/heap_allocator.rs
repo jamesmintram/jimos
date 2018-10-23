@@ -1,20 +1,11 @@
 use alloc::alloc::{GlobalAlloc, Layout};
-use core::sync::atomic::{AtomicUsize, Ordering};
+use core::sync::atomic::{AtomicUsize};
 
 use memory;
 use memory::FrameAllocator;
 use memory::LockedAreaFrameAllocator;
-use memory::AreaFrameAllocator;
 
-use alloc::boxed::Box;
-
-//use core::mem;
-
-// #[cfg(feature = "use_spin")]
 use core::ops::Deref;
-//use core::ptr::NonNull;
-
-// #[cfg(feature = "use_spin")]
 use spin::Mutex;
 
 /// A simple allocator that allocates memory linearly and ignores freed memory.
@@ -40,7 +31,7 @@ impl BumpAllocator
         }
     }
 
-    unsafe fn alloc(&mut self, layout: Layout) -> *mut u8 {
+    unsafe fn alloc(&mut self, _layout: Layout) -> *mut u8 {
         
         //let fa = &mut self.allocator.lock();
         // let ff = fa.expect("Mem not inited");
@@ -87,11 +78,11 @@ impl BumpAllocator
 
 
 unsafe impl GlobalAlloc for BumpAllocator {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+    unsafe fn alloc(&self, _layout: Layout) -> *mut u8 {
         0 as *mut u8
     }
 
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {
         
     }
 }
@@ -111,7 +102,7 @@ impl LockedHeap {
         LockedHeap(Mutex::new(None))
     }
 
-    //NOTE: NOTE THREAD SAFE!
+    //NOTE: NOT THREAD SAFE!
     pub fn init(&mut self, allocator:  &'static LockedAreaFrameAllocator) {
         self.0 = Mutex::new(Some(BumpAllocator::new(allocator)));
     }

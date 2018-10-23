@@ -100,7 +100,7 @@ fn data_abort(
                 remap(process);
             },
 
-            virtual_address::VirtualAddress::Kernel(addr) => {
+            virtual_address::VirtualAddress::Kernel(_addr) => {
                 write!(
                     kwriter::WRITER,
                     "Kernel Page Fault: 0x{:X}\n", far);    
