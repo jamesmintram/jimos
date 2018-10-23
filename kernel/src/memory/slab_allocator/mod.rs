@@ -1,158 +1,27 @@
 use alloc::alloc::{Layout, GlobalAlloc};
-use alloc::boxed::Box;
 
 use memory;
-use memory::Frame;
-
-
 use memory::LockedAreaFrameAllocator;
-use core::mem::size_of;
+
 use core::ops::Deref;
-use core::slice;
 use spin::Mutex;
 
 use kwriter;
 use core::fmt::Write;
+
+mod bucket;
+mod paged_vector;
+mod linked_list_allocator;
+
+use self::bucket::{Bucket, BucketStatus};
+use self::paged_vector::PagedVector;
+use self::linked_list_allocator::LinkedListAllocator;
 
 pub trait HeapAllocator 
 {
     fn allocate(&mut self, size: usize) -> *mut u8;
     fn release(&mut self, ptr: *mut u8);
     fn release_unused(&mut self);
-}
-
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum BucketStatus {
-    Unused,
-    Partial,
-    Full,
-}
-
-//TODO: Make copyable?
-struct Bucket {
-    start: Frame,
-    end: Frame,
-    first_free: u64,
-    status: BucketStatus,
-}
-
-//----------------------------------------
-
-struct PagedVectorPage {
-    next: *mut PagedVectorPage,
-    count: usize,
-}
-
-impl PagedVectorPage {
-    fn max(&self) -> usize
-    {
-        //TODO: Implement properly
-        return 4;
-    }
-    fn is_full(&self) -> bool
-    {
-        return self.count == self.max();
-    }
-
-    fn new(frame_allocator: &'static LockedAreaFrameAllocator) -> Box<PagedVectorPage> 
-    {
-        let page = memory::alloct::<PagedVectorPage>(frame_allocator, 1);
-        unsafe {
-            (*page).next = 0 as *mut PagedVectorPage;
-            (*page).count = 0;
-            
-            return Box::from_raw(page)
-        }
-    }
-    fn first_bucket(&mut self) -> *mut Bucket 
-    {
-        let self_raw = self as *mut PagedVectorPage;
-        return unsafe {self_raw.add(1) as *mut Bucket};
-    }
-
-    fn get_buckets(&mut self) -> &mut [Bucket]
-    {
-        let first_bucket = self.first_bucket();
-        unsafe { slice::from_raw_parts_mut(first_bucket, self.count) }        
-    }
-
-    fn add_bucket(&mut self, bucket: Bucket) 
-    {
-        if self.is_full()
-        {
-            panic!();
-        }
-
-        let first_bucket = self.first_bucket();
-        
-        unsafe {
-            let target_bucket = first_bucket.add(self.count);
-            target_bucket.write(bucket);
-        }
-        self.count += 1;
-    }
-}
-
-struct PagedVector {
-    head: Box<PagedVectorPage>,
-
-    //TODO: Fix the lifetime
-    allocator: &'static LockedAreaFrameAllocator,
-}
-
-impl PagedVector 
-{
-    fn new(allocator: &'static LockedAreaFrameAllocator) -> PagedVector 
-    {
-        let first_page = PagedVectorPage::new(allocator);
-
-        return PagedVector{
-            head: first_page,
-            allocator: allocator,
-        }
-    }
-
-    fn update_one<
-        Pred: Fn(&Bucket) -> bool, 
-        Update: Fn(&mut Bucket) -> ()> 
-            (&mut self, pred: Pred, update: Update) -> bool
-    {
-        let buckets = self.head.get_buckets();
-
-        //TODO: Go page by page
-        for ref mut bucket in buckets.iter_mut() {
-            write!(kwriter::WRITER, "Iter bucket!\n");
-            if (pred(bucket))
-            {
-                write!(kwriter::WRITER, "Found bucket!\n");
-                update(bucket);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    fn add_one<
-        Create: Fn() -> Bucket, 
-        Update: Fn(&mut Bucket) -> ()> 
-            (&mut self, create: Create, update: Update) -> bool
-    {
-        if self.head.is_full() == false 
-        {
-            write!(kwriter::WRITER, "Add bucket!\n");
-
-            let mut new_bucket = create();
-            update(&mut new_bucket);
-            self.head.add_bucket(new_bucket);
-            
-            return true;
-        }
-        
-        //If I can not add a bucket (because the descriptor page is full?)
-        write!(kwriter::WRITER, "Failed to create a new bucket\n");
-        return false;
-    }
 }
 
 //----------------------------------------
@@ -178,14 +47,17 @@ impl HeapAllocator for SlabAllocator {
 
         if updated == false 
         {
+            let allocator = self.allocator;
             self.bucket_data.add_one(
-                || {Bucket{
-                        start: Frame{number: 0},
-                        end: Frame{number: 0},
-                        first_free: 0,
-                        status: BucketStatus::Unused,
-                    }},
-                |bucket| {bucket.status = BucketStatus::Partial}
+                ||       // Create fn
+                {
+                    let (start, end) = memory::alloc_frames(allocator, 1);
+                    Bucket::new(start, end, _size)
+                },
+                |bucket| // Update fn
+                {
+                    bucket.status = BucketStatus::Partial
+                }
             );
         }
 
@@ -223,44 +95,6 @@ impl SlabAllocator
 
 //-------------------------------------------
 
-
-pub struct LinkedListAllocator 
-{
-    count: usize,
-
-    //TODO: Fix the lifetime
-    allocator: &'static LockedAreaFrameAllocator,
-}
-
-impl LinkedListAllocator 
-{
-    fn new(frame_allocator: &'static LockedAreaFrameAllocator) -> LinkedListAllocator 
-    {
-        LinkedListAllocator {
-            count: 0,
-            allocator: frame_allocator,
-        }
-    }    
-}
-
-impl HeapAllocator for LinkedListAllocator {
-    fn allocate(&mut self, size: usize) -> *mut u8 
-    {
-        let frame_count = (size / memory::PAGE_SIZE) + 1;
-        write!(kwriter::WRITER, "Alloc {} frames from list allocator\n", frame_count);
-        memory::alloc(self.allocator, frame_count)
-    }
-    fn release(&mut self, _ptr: *mut u8) 
-    {
-        write!(kwriter::WRITER, "Release to Physical: \n");
-    }
-    fn release_unused(&mut self) 
-    {
-
-    }
-}
-
-//-------------------------------------------
 
 pub struct HeapSlabAllocator
 {

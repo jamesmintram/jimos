@@ -15,7 +15,7 @@ use self::paging::table::{Table, Level4};
 use self::paging::Page;
 use self::paging::translate_page;
 
-pub use self::area_frame_allocator::{alloc, alloct};
+pub use self::area_frame_allocator::{alloc, alloct, alloc_frames};
 pub use self::area_frame_allocator::AreaFrameAllocator;
 pub use self::area_frame_allocator::LockedAreaFrameAllocator;
 
