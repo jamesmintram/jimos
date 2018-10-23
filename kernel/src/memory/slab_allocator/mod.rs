@@ -42,21 +42,27 @@ impl HeapAllocator for SlabAllocator {
         //TODO: Track wastage using _size
 
         let updated = self.bucket_data.update_one(
-            |bucket|  {bucket.status != BucketStatus::Full},
-            |bucket|  {bucket.status = BucketStatus::Full});
+            |bucket|  {bucket.status() != BucketStatus::Full},
+            |bucket|  {
+                //TODO: We need to return a usable object here
+                bucket.take();
+            }
+        );
 
         if updated == false 
         {
             let allocator = self.allocator;
+            let object_size = self.object_size;
+
             self.bucket_data.add_one(
                 ||       // Create fn
                 {
                     let (start, end) = memory::alloc_frames(allocator, 1);
-                    Bucket::new(start, end, _size)
+                    Bucket::new(start, end, object_size)
                 },
                 |bucket| // Update fn
                 {
-                    bucket.status = BucketStatus::Partial
+                    
                 }
             );
         }
@@ -67,12 +73,12 @@ impl HeapAllocator for SlabAllocator {
 
     
         //TODO: Remove all of this
-        write!(kwriter::WRITER, "Alloc from Slab: {}\n", self.object_size);
+        //write!(kwriter::WRITER, "Alloc from Slab: {}\n", self.object_size);
         let frame_count = (self.object_size / memory::PAGE_SIZE) + 1;
         memory::alloc(self.allocator, frame_count)
     }
     fn release(&mut self, _ptr: *mut u8) {
-        write!(kwriter::WRITER, "Release to Slab: {}\n", self.object_size);
+        //write!(kwriter::WRITER, "Release to Slab: {}\n", self.object_size);
     }
     fn release_unused(&mut self) {
 
@@ -131,7 +137,7 @@ impl HeapSlabAllocator
             slab256: SlabAllocator::new(frame_allocator, 256),
             slab512: SlabAllocator::new(frame_allocator, 512),
             slab1024: SlabAllocator::new(frame_allocator, 1024),
-            slab2048: SlabAllocator::new(frame_allocator, 2046),
+            slab2048: SlabAllocator::new(frame_allocator, 2048),
             slab4096: SlabAllocator::new(frame_allocator, 4096),
 
             large: LinkedListAllocator::new(frame_allocator),

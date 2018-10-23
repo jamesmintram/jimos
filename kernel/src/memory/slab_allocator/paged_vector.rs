@@ -19,7 +19,7 @@ impl PagedVectorPage {
     fn max(&self) -> usize
     {
         //TODO: Implement properly
-        return 4;
+        return 2;
     }
     fn is_full(&self) -> bool
     {
@@ -93,10 +93,10 @@ impl PagedVector
 
         //TODO: Go page by page
         for ref mut bucket in buckets.iter_mut() {
-            write!(kwriter::WRITER, "Iter bucket!\n");
+            //write!(kwriter::WRITER, "Iter bucket!\n");
             if pred(bucket)
             {
-                write!(kwriter::WRITER, "Found bucket!\n");
+                //write!(kwriter::WRITER, "Found bucket!\n");
                 update(bucket);
                 return true;
             }
