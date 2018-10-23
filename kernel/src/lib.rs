@@ -130,7 +130,7 @@ pub unsafe extern "C" fn kmain()
 
     // Heap Test
     //----------------------
-    let mut vec_test = vec![1,2,3,4,5,6,7];
+    let mut vec_test = vec![1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2,3,4,5,6,7];
     vec_test[3] = 42;
 
     for _i in 0..1098 {
@@ -295,8 +295,8 @@ pub unsafe extern "C" fn kmain()
     //     "UPT1: Data at data: 0x{:X?}\n", 
     //     *data);
 
-    for _i in 0..134 {
-        let mut vec_test = vec![1,2,3,4,5,6,7];
+    for _i in 0..1024 {
+        let mut vec_test = vec![1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2,3,4,5,6,7];
         vec_test[3] = 42;
     }
 

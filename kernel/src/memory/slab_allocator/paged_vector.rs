@@ -4,6 +4,7 @@ use memory;
 
 use memory::LockedAreaFrameAllocator;
 use core::slice;
+use core::mem::size_of;
 
 use kwriter;
 use core::fmt::Write;
@@ -18,8 +19,8 @@ struct PagedVectorPage {
 impl PagedVectorPage {
     fn max(&self) -> usize
     {
-        //TODO: Implement properly
-        return 2;
+        let available_size = memory::PAGE_SIZE - size_of::<PagedVectorPage>();
+        return  available_size / size_of::<Bucket>();
     }
     fn is_full(&self) -> bool
     {
@@ -78,6 +79,8 @@ impl PagedVector
     {
         let first_page = PagedVectorPage::new(allocator);
 
+        write!(kwriter::WRITER, "PagedVector created, {} descriptors per Page\n", first_page.max());
+
         return PagedVector{
             head: first_page,
             allocator: allocator,
@@ -86,8 +89,9 @@ impl PagedVector
 
     pub fn update_one<
         Pred: Fn(&Bucket) -> bool, 
-        Update: Fn(&mut Bucket) -> ()> 
-            (&mut self, pred: Pred, update: Update) -> bool
+        Update: Fn(&mut Bucket) -> T,
+        T> 
+            (&mut self, pred: Pred, update: Update) -> Option<T>
     {
         let buckets = self.head.get_buckets();
 
@@ -97,32 +101,32 @@ impl PagedVector
             if pred(bucket)
             {
                 //write!(kwriter::WRITER, "Found bucket!\n");
-                update(bucket);
-                return true;
+                return Some(update(bucket));
             }
         }
 
-        return false;
+        None
     }
 
     pub fn add_one<
         Create: Fn() -> Bucket, 
-        Update: Fn(&mut Bucket) -> ()> 
-            (&mut self, create: Create, update: Update) -> bool
+        Update: Fn(&mut Bucket) -> T,
+        T> 
+            (&mut self, create: Create, update: Update) -> Option<T>
     {
         if self.head.is_full() == false 
         {
-            write!(kwriter::WRITER, "Add bucket!\n");
+            //write!(kwriter::WRITER, "Add bucket!\n");
 
             let mut new_bucket = create();
-            update(&mut new_bucket);
+            let result = update(&mut new_bucket);
             self.head.add_bucket(new_bucket);
             
-            return true;
+            return Some(result)
         }
         
         //If I can not add a bucket (because the descriptor page is full?)
         write!(kwriter::WRITER, "Failed to create a new bucket\n");
-        return false;
+        None
     }
 }

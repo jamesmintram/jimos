@@ -40,42 +40,24 @@ impl HeapAllocator for SlabAllocator {
     fn allocate(&mut self, _size: usize) -> *mut u8 
     {    
         //TODO: Track wastage using _size
+        let object = self.bucket_data.update_one(
+            |bucket|  { bucket.status() != BucketStatus::Full },
+            |bucket|  { bucket.take() })
+        .or_else(
+            || {
+                let allocator = self.allocator;
+                let object_size = self.object_size;
 
-        let updated = self.bucket_data.update_one(
-            |bucket|  {bucket.status() != BucketStatus::Full},
-            |bucket|  {
-                //TODO: We need to return a usable object here
-                bucket.take();
-            }
-        );
-
-        if updated == false 
-        {
-            let allocator = self.allocator;
-            let object_size = self.object_size;
-
-            self.bucket_data.add_one(
-                ||       // Create fn
-                {
-                    let (start, end) = memory::alloc_frames(allocator, 1);
-                    Bucket::new(start, end, object_size)
-                },
-                |bucket| // Update fn
-                {
-                    
-                }
-            );
-        }
-
-        //Find a bucket with space
-        //  Get the first free object in the bucket
-        //Otherwise write and panic
-
-    
-        //TODO: Remove all of this
-        //write!(kwriter::WRITER, "Alloc from Slab: {}\n", self.object_size);
-        let frame_count = (self.object_size / memory::PAGE_SIZE) + 1;
-        memory::alloc(self.allocator, frame_count)
+                self.bucket_data.add_one(
+                    || {
+                        let (start, end) = memory::alloc_frames(allocator, 1);
+                        Bucket::new(start, end, object_size)
+                    },
+                    |bucket| { bucket.take() }
+                )})
+        .unwrap();
+        
+        object
     }
     fn release(&mut self, _ptr: *mut u8) {
         //write!(kwriter::WRITER, "Release to Slab: {}\n", self.object_size);
@@ -101,7 +83,6 @@ impl SlabAllocator
 
 //-------------------------------------------
 
-
 pub struct HeapSlabAllocator
 {
     slab64: SlabAllocator,
@@ -115,18 +96,17 @@ pub struct HeapSlabAllocator
     large: LinkedListAllocator,
 }
 
-//------------------------------
-    enum ObjectSize {
-        Size64Bytes,
-        Size128Bytes,
-        Size256Bytes,
-        Size512Bytes,
-        Size1024Bytes,
-        Size2048Bytes,
-        Size4096Bytes,
-        
-        SizeLarge,
-    }
+enum ObjectSize {
+    Size64Bytes,
+    Size128Bytes,
+    Size256Bytes,
+    Size512Bytes,
+    Size1024Bytes,
+    Size2048Bytes,
+    Size4096Bytes,
+    
+    SizeLarge,
+}
 
 impl HeapSlabAllocator 
 {
@@ -193,9 +173,6 @@ impl HeapSlabAllocator
         }
     }
 }
-
-
-
 
 pub struct LockedSlabHeap(Mutex<Option<HeapSlabAllocator>>);
 

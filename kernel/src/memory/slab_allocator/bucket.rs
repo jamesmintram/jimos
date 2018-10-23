@@ -16,7 +16,7 @@ pub enum BucketStatus {
 pub struct Bucket {
     pub start: Frame,
     pub end: Frame,
-    pub first_free: usize,    //FreeList?
+    pub first_free: usize,   
     pub object_size: usize,
 }
 
@@ -50,7 +50,7 @@ impl Bucket {
             let current_head = start_ptr.add(start_offset) as *mut usize;
             let next_head = *current_head;
 
-            write!(kwriter::WRITER,  "Current head: {:X}\n", current_head as usize);
+            // write!(kwriter::WRITER,  "Current head: {:X}\n", current_head as usize);
 
             self.first_free = next_head;
             return current_head as *mut u8;
