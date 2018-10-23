@@ -1,21 +1,20 @@
 use alloc::alloc::{Layout, GlobalAlloc};
 
-use memory;
 use memory::LockedAreaFrameAllocator;
 
 use core::ops::Deref;
 use spin::Mutex;
 
-use kwriter;
-use core::fmt::Write;
+// use kwriter;
+// use core::fmt::Write;
 
 mod bucket;
 mod paged_vector;
 mod linked_list_allocator;
+mod slab_allocator;
 
-use self::bucket::{Bucket, BucketStatus};
-use self::paged_vector::PagedVector;
 use self::linked_list_allocator::LinkedListAllocator;
+use self::slab_allocator::SlabAllocator;
 
 pub trait HeapAllocator 
 {
@@ -23,71 +22,6 @@ pub trait HeapAllocator
     fn release(&mut self, ptr: *mut u8);
     fn release_unused(&mut self);
 }
-
-//----------------------------------------
-
-pub struct SlabAllocator 
-{
-    count: usize,
-    object_size: usize,
-
-    bucket_data: PagedVector,
-    //TODO: Fix the lifetime
-    allocator: &'static LockedAreaFrameAllocator,
-}
-
-impl HeapAllocator for SlabAllocator {
-    fn allocate(&mut self, _size: usize) -> *mut u8 
-    {   
-        // write!(kwriter::WRITER, "Alloc from Slab: {:X}\n", self.object_size); 
-
-        //TODO: Track wastage using _size
-        let object = self.bucket_data.update_one(
-            |bucket|  { bucket.status() != BucketStatus::Full },
-            |bucket|  { bucket.take() })
-        .or_else(
-            || {
-                let allocator = self.allocator;
-                let object_size = self.object_size;
-
-                self.bucket_data.add_one(
-                    || {
-                        let (start, end) = memory::alloc_frames(allocator, 1);
-                        Bucket::new(start, end, object_size)
-                    },
-                    |bucket| { bucket.take() }
-                )})
-        .unwrap();
-        
-        object
-    }
-    fn release(&mut self, ptr: *mut u8) {
-        // write!(kwriter::WRITER, "Release to Slab: {:X}\n", ptr as usize);
-
-        self.bucket_data.update_one(
-            |bucket|  { bucket.contains(ptr) },
-            |bucket|  { bucket.release(ptr) })
-        .expect("Invalid ptr address");
-    }
-    fn release_unused(&mut self) {
-        //TODO: Implement this
-    }
-}
-
-impl SlabAllocator 
-{
-    fn new(allocator: &'static LockedAreaFrameAllocator, object_size: usize) -> SlabAllocator 
-    {
-        SlabAllocator {
-            //head: 0 as *mut Bucket,
-            count: 0,
-            object_size: object_size,
-            bucket_data: PagedVector::new(allocator),
-            allocator: allocator,
-        }
-    }    
-}
-
 //-------------------------------------------
 
 pub struct HeapSlabAllocator

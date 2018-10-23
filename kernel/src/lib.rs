@@ -130,20 +130,20 @@ pub unsafe extern "C" fn kmain()
 
     // Heap Test
     //----------------------
-    // let mut vec_test = vec![1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2,3,4,5,6,7];
-    // vec_test[3] = 42;
+    let mut vec_test = vec![1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2,3,4,5,6,7];
+    vec_test[3] = 42;
 
-    // for _i in 0..1098 {
-    //     vec_test.push(1);
-    // }
+    for _i in 0..1098 {
+        vec_test.push(1);
+    }
 
-    // for i in &vec_test {
-    //     write!(kwriter::WRITER,"{} ", i);
-    // }
+    for i in &vec_test {
+        write!(kwriter::WRITER,"{} ", i);
+    }
 
-    // write!(
-    //     kwriter::WRITER, 
-    //     "Pushed some vec\n");
+    write!(
+        kwriter::WRITER, 
+        "Pushed some vec\n");
 
     // // Deadlock test TODO: Make this pass
     // if let Some(ref mut allocator) = *KERNEL_FRAME_ALLOCATOR.lock() {
@@ -169,13 +169,8 @@ pub unsafe extern "C" fn kmain()
 
     //------------------------------------------------
     //TODO: This should be all fixed up to use UserAddress or KernelAddress
-    // let addr1 = 42 * 512 * 512 * 4096; 
-    // let addr2 = 12 * 512 * 512 * 4096; 
-
-    // This manages pageable memory
-    // let frame_allocator
-    //     = &mut *memory::AreaFrameAllocator::new(anon_mem_start);
-
+    let addr1 = 42 * 512 * 512 * 4096; 
+    let addr2 = 12 * 512 * 512 * 4096; 
 
     //TODO: Create entry in process address space
     //      Trigger a page fault
@@ -189,56 +184,56 @@ pub unsafe extern "C" fn kmain()
     //          Need to remove from page table
 
     // let add_space = memory::address_space::new();
-    // let create_table = || {
-    //     let mut lock = KERNEL_FRAME_ALLOCATOR.lock();
+    let create_table = || {
+        let mut lock = KERNEL_FRAME_ALLOCATOR.lock();
         
-    //     if let Some(ref mut allocator) = *lock 
-    //     {
-    //         //TODO: Refactor this so that we use memory::alloc(allocator)
-    //         return memory::paging::table::new(&mut **allocator);
-    //     }
+        if let Some(ref mut allocator) = *lock 
+        {
+            //TODO: Refactor this so that we use memory::alloc(allocator)
+            return memory::paging::table::new(&mut **allocator);
+        }
 
-    //     panic!()
-    // };
+        panic!()
+    };
 
 
-    // let create_process = |table| {
-    //     let newprocess = process::Process{page_table: table};
-    //     return newprocess;
-    // };          
+    let create_process = |table| {
+        let newprocess = process::Process{page_table: table};
+        return newprocess;
+    };          
 
-    // //TODO: Refactor this so that we use memory::alloc(allocator)
-    // let map_address = |process: &mut process::Process, address| {
-    //     let mut lock = KERNEL_FRAME_ALLOCATOR.lock();
+    //TODO: Refactor this so that we use memory::alloc(allocator)
+    let map_address = |process: &mut process::Process, address| {
+        let mut lock = KERNEL_FRAME_ALLOCATOR.lock();
         
-    //     if let Some(ref mut allocator) = *lock 
-    //     {
-    //         //Map a page into that memory (TODO: Move this)
-    //         let page = Page::containing_address(address);
-    //         let frame = allocator
-    //             .allocate_frame()
-    //             .expect("no more frames");
+        if let Some(ref mut allocator) = *lock 
+        {
+            //Map a page into that memory (TODO: Move this)
+            let page = Page::containing_address(address);
+            let frame = allocator
+                .allocate_frame()
+                .expect("no more frames");
 
-    //         memory::paging::map_to(
-    //             process.page_table, 
-    //             page, 
-    //             frame, 
-    //             EntryFlags::empty(), 
-    //             &mut **allocator
-    //             );
-    //     }
-    //     else
-    //     {
-    //         panic!();
-    //     }
-    // };          
+            memory::paging::map_to(
+                process.page_table, 
+                page, 
+                frame, 
+                EntryFlags::empty(), 
+                &mut **allocator
+                );
+        }
+        else
+        {
+            panic!();
+        }
+    };          
 
-    // let user_table1 = create_table();
-    // let mut process1 = create_process(user_table1);
-    // map_address(&mut process1, addr1);
-    // map_address(&mut process1, addr2);
+    let user_table1 = create_table();
+    let mut process1 = create_process(user_table1);
+    map_address(&mut process1, addr1);
+    map_address(&mut process1, addr2);
 
-    // let user_table2 = create_table();
+    let user_table2 = create_table();
 
     //https://shop.pimoroni.com/products/hdmi-8-lcd-screen-kit-1024x768#description
     
@@ -267,24 +262,24 @@ pub unsafe extern "C" fn kmain()
     // // Question: Are interrupts masked during a Sync Exception?
 
     // Test out the mapping
-    // let data : *mut usize = addr1 as *mut usize;
+    let data : *mut usize = addr1 as *mut usize;
 
-    // process::switch_process(&mut process1);
-    // memory::activate_el0(process1.page_table);
+    process::switch_process(&mut process1);
+    memory::activate_el0(process1.page_table);
 
     // TODO GET WORKING ON HARDWARE    
-    // *data = 1024;
-    // write!(
-    //     kwriter::WRITER, 
-    //     "UPT1: Data at data: 0x{:X?}\n", 
-    //     *data);
+    *data = 1024;
+    write!(
+        kwriter::WRITER, 
+        "UPT1: Data at data: 0x{:X?}\n", 
+        *data);
 
-    // memory::activate_el0(user_table2);
+    memory::activate_el0(user_table2);
 
-    // write!(
-    //     kwriter::WRITER, 
-    //     "Data at data: 0x{:X?}\n", 
-    //     *data);
+    write!(
+        kwriter::WRITER, 
+        "Data at data: 0x{:X?}\n", 
+        *data);
     //TODO GET WORKING ON HARDWARE
 
 

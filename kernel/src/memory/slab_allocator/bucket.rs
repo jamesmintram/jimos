@@ -40,10 +40,6 @@ impl Bucket {
             return 0 as *mut u8;
         }
 
-        //Return a ptr
-        // let start_address = memory::physical_to_kernel(self.start.start_address());
-        // let start_ptr = start_address as *mut u8;
-
         unsafe {
             let current_head = self.first_free as *mut usize;
             let next_head = *current_head;
@@ -53,6 +49,8 @@ impl Bucket {
             self.first_free = next_head;
             // write!(kwriter::WRITER, "Take FF {:X}\n", self.first_free);
             // write!(kwriter::WRITER, "Take RET {:X}\n", current_head as usize);
+
+            //TODO: Memset to zero before returning
             return current_head as *mut u8;
         }
     }
@@ -107,7 +105,7 @@ impl Bucket {
             let start_ptr = start_address as *mut u8;
             let mut offset = 0;
 
-            for idx in 0..object_count -1 {                
+            for _idx in 0..object_count -1 {                
                 let current_ptr = start_ptr.add(offset) as *mut usize;
 
                 let next_ptr = start_ptr.add(offset + object_size) as *mut usize;
