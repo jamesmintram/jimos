@@ -38,7 +38,9 @@ pub struct SlabAllocator
 
 impl HeapAllocator for SlabAllocator {
     fn allocate(&mut self, _size: usize) -> *mut u8 
-    {    
+    {   
+        // write!(kwriter::WRITER, "Alloc from Slab: {:X}\n", self.object_size); 
+
         //TODO: Track wastage using _size
         let object = self.bucket_data.update_one(
             |bucket|  { bucket.status() != BucketStatus::Full },
@@ -59,11 +61,16 @@ impl HeapAllocator for SlabAllocator {
         
         object
     }
-    fn release(&mut self, _ptr: *mut u8) {
-        //write!(kwriter::WRITER, "Release to Slab: {}\n", self.object_size);
+    fn release(&mut self, ptr: *mut u8) {
+        // write!(kwriter::WRITER, "Release to Slab: {:X}\n", ptr as usize);
+
+        self.bucket_data.update_one(
+            |bucket|  { bucket.contains(ptr) },
+            |bucket|  { bucket.release(ptr) })
+        .expect("Invalid ptr address");
     }
     fn release_unused(&mut self) {
-
+        //TODO: Implement this
     }
 }
 

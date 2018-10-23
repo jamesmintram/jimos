@@ -17,7 +17,6 @@ pub struct Bucket {
     pub start: Frame,
     pub end: Frame,
     pub first_free: usize,   
-    pub object_size: usize,
 }
 
 const  LIST_END: usize = core::usize::MAX;
@@ -42,24 +41,50 @@ impl Bucket {
         }
 
         //Return a ptr
-        let start_address = memory::physical_to_kernel(self.start.start_address());
-        let start_ptr = start_address as *mut u8;
-        let start_offset = self.first_free * self.object_size;
+        // let start_address = memory::physical_to_kernel(self.start.start_address());
+        // let start_ptr = start_address as *mut u8;
 
         unsafe {
-            let current_head = start_ptr.add(start_offset) as *mut usize;
+            let current_head = self.first_free as *mut usize;
             let next_head = *current_head;
 
             // write!(kwriter::WRITER,  "Current head: {:X}\n", current_head as usize);
 
             self.first_free = next_head;
+            // write!(kwriter::WRITER, "Take FF {:X}\n", self.first_free);
+            // write!(kwriter::WRITER, "Take RET {:X}\n", current_head as usize);
             return current_head as *mut u8;
         }
     }
 
-    pub fn release()
+    pub fn release(&mut self, ptr: *mut u8)
     {
-        //Takes a ptr and adds it to the freelist
+        if self.contains(ptr) == false
+        {
+            panic!();
+        }
+
+        // write!(kwriter::WRITER, "PreRelease FF {:X}\n", self.first_free);
+
+        // Put this at the start of the freelist
+        unsafe {
+            let new_head = ptr as *mut usize;
+            *new_head = self.first_free;
+            self.first_free = ptr as usize;
+        }
+
+        // write!(kwriter::WRITER, "Release PT {:X}\n", ptr as usize);
+        // write!(kwriter::WRITER, "Release FF {:X}\n", self.first_free);
+    }
+
+    pub fn contains(&self, ptr: *const u8) -> bool
+    {
+        let start_address = memory::physical_to_kernel(self.start.start_address());
+        let end_address = memory::physical_to_kernel(self.end.start_address());
+
+        let ptr_address = ptr as usize;
+
+        ptr_address >= start_address && ptr_address < end_address
     }
 
     pub fn new(start: Frame, end: Frame, object_size: usize) -> Bucket
@@ -83,9 +108,13 @@ impl Bucket {
             let mut offset = 0;
 
             for idx in 0..object_count -1 {                
-                let next_ptr = start_ptr.add(offset) as *mut usize;
+                let current_ptr = start_ptr.add(offset) as *mut usize;
+
+                let next_ptr = start_ptr.add(offset + object_size) as *mut usize;
+                let next_ptr_address = next_ptr as usize;
+
+                current_ptr.write(next_ptr_address);
                 offset += object_size;
-                next_ptr.write(idx + 1);
             }
 
             //Now set the final item in the freelist to -1
@@ -103,8 +132,7 @@ impl Bucket {
         Bucket{
             start: start,
             end: end,
-            first_free: 0,
-            object_size: object_size,
+            first_free: start_address,
         }
     }
 }
