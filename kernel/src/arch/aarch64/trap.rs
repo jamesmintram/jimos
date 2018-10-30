@@ -64,7 +64,7 @@ fn exception_from_esr(esr: u32) -> Exception {
 fn remap(process: &process::Process)
 {    
     write!(kwriter::WRITER, "Switching out PGT\n");
-    memory::activate_el0(process.page_table);
+    memory::activate_el0(process.address_space.page_table);
 }
 
 fn data_abort(

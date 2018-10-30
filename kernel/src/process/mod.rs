@@ -1,18 +1,16 @@
-use memory::address_space::AddressSpace;
-use memory::va_segment::VASegment;
-use memory::paging::table;
+use memory::LockedAreaFrameAllocator;  
+use memory::address_space;
+
+
 use arch::aarch64::arm;
 use arch::aarch64::frame::TrapFrame;
-use alloc::boxed::Box;
 
 pub struct Process<'a> 
 {
-    pub page_table: &'a mut table::Table<table::Level4>,
-
-    pub address_space: AddressSpace<'a>,
-    pub heap: VASegment,
-    pub stack: VASegment,
-    pub text: VASegment,
+    pub address_space: address_space::AddressSpace<'a>,
+    pub heap: address_space::AddressSegmentId,
+    pub stack: address_space::AddressSegmentId,
+    pub text: address_space::AddressSegmentId,
 
     // Context
     pub frame: TrapFrame,
@@ -34,45 +32,39 @@ pub struct Process<'a>
 
 impl<'a> Process<'a>
 {
-    pub fn create(page_table: &'a mut table::Table<table::Level4>)// -> Process<'a>
+    pub fn new(allocator: &'a LockedAreaFrameAllocator) -> Process<'a>
     {
-        // let address_space = AddressSpace::create();
+        /*
+            TODO: Add Result type to this and plenty of ?
+            Enforce Range: Start < End
+        */
+        let mut new_as = address_space::AddressSpace::new(allocator);    
         
-        // // Remove all of the explicit lifetimes (once we create our own page table)
-        // // Creates its own page table using page_alloc/KERNEL_ALLOCATOR
-        // // Owns its segments, which can be borrowed
-        // // Create_segment returns an AddressSegmentID
+        let heap_desc = address_space::AddressSegmentDesc{
+            range: address_space::AddressRange{start: 0x10000, end: 0xFFFFF},
+        };
+        let text_desc = address_space::AddressSegmentDesc{
+            range: address_space::AddressRange{start: 0x100000, end: 0xFFFFFF},
+        };
+        let stack_desc = address_space::AddressSegmentDesc{
+            range: address_space::AddressRange{start: 0x1000000, end: 0xFFFFFFF},
+        };
 
-        // let heap = address_space.create_segment(seg_desc);
+        let head_seg_id = new_as.add_segment(&heap_desc);
+        let text_seg_id = new_as.add_segment(&text_desc);
+        let stack_seg_id = new_as.add_segment(&stack_desc);
 
-        // {
-        //     Check out the ? operator - used in 
-        //     if let Some(heap_ref) = address_space.get_mut(heap)
-        //     {
-        //         //Do some stuff
-        //     }
-        // }
+        let new_process: Process<'a> = Process{
+            heap: head_seg_id,
+            stack: text_seg_id,
+            text: stack_seg_id,
 
-        // let mut new_process: Process<'a> = Process{
-        //     page_table: page_table,
+            address_space: new_as,
+            frame: Default::default(),
+        };
 
-        //     heap: VASegment{},
-        //     stack: VASegment{},
-        //     text: VASegment{},
-
-        //     address_space: address_space,
-        //     frame: Default::default(),
-        // };
-
-        // new_process.address_space.add_segment(&new_process.heap);
-        // new_process.address_space.add_segment(&new_process.stack);
-        // new_process.address_space.add_segment(&new_process.text);
-
-
-        // return new_process;
+        return new_process;
     }
-
-
 }
 
 pub fn switch_process(next_process: &mut Process) 

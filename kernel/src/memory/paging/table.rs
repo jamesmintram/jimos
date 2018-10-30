@@ -117,7 +117,7 @@ impl<L> IndexMut<usize> for Table<L> where L: TableLevel {
     }
 }
 
-pub fn new<'a, 'b, A> (frame_allocator: &LockedAreaFrameAllocator) -> &'b mut Table<Level4>
+pub fn new (frame_allocator: &LockedAreaFrameAllocator) -> &mut Table<Level4>
 {
     let new_pgt = kalloc::alloc_page(frame_allocator);
     let new_pgt_ptr: *mut Table<Level4> = new_pgt as *mut _;

@@ -1,5 +1,6 @@
 use memory;
 use memory::Frame;
+use memory::FrameAllocator;
 use memory::LockedAreaFrameAllocator;
 
 pub fn alloc_frames(
