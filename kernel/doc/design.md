@@ -36,3 +36,40 @@ where T is a Mapper
     as.drop_segment(seg_id)
         mapperT::DropRange(self, pgt, old_range)
 
+
+Memory driver management
+
+let mem_seg_desc1 = {
+    "mmio",
+    start_addr,
+    end_addr,
+    ACL = [MMIO, ROOT]
+}
+
+let mem_seg_desc2 = {
+    "mailbox",
+    start_addr,
+    end_addr,
+    ACL = [MBOX, ROOT]
+}
+
+memfs::init();
+memfs::register(mem_seg_desc1);
+memfs::register(mem_seg_desc2);
+
+
+Driver process registration
+
+let driver = create_process();
+driver.acl.add_group("MMIO");
+elf::load_image("MMIO_DRIVER", driver.address_space);
+scheduler::schedule(driver);
+
+Driver process code
+
+let fd = fopen("/dev/mem/mmio", "rw")
+let mmio_mem = mmap(null, fd, fd_size, RW);
+
+let mmio = mmio::create(mmio_mem);
+
+//.. Start doing stuff with mmio
