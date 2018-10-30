@@ -119,7 +119,7 @@ phase4/build
 phase4/target
 files/
 
-
+target/
 build/
 *.dump
 *.core
