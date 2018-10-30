@@ -3,7 +3,9 @@ pub mod paging;
 pub mod heap_allocator;
 pub mod virtual_address;
 pub mod address_space;
+pub mod va_segment;
 pub mod slab_allocator;
+pub mod kalloc;
 
 use memory;
 use arch::aarch64::arm;
@@ -15,7 +17,7 @@ use self::paging::table::{Table, Level4};
 use self::paging::Page;
 use self::paging::translate_page;
 
-pub use self::area_frame_allocator::{alloc, alloct, alloc_frames};
+pub use self::kalloc::{alloc_pages, alloct_pages, alloc_frames};
 pub use self::area_frame_allocator::AreaFrameAllocator;
 pub use self::area_frame_allocator::LockedAreaFrameAllocator;
 

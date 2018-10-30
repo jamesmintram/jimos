@@ -1,5 +1,5 @@
 #![feature(panic_implementation)]
-#![feature(compiler_builtins_lib, lang_items, asm, used)]
+#![feature(compiler_builtins_lib, lang_items, asm)]
 #![no_builtins]
 #![no_std]
 #![feature(alloc)]
@@ -197,10 +197,12 @@ pub unsafe extern "C" fn kmain()
     };
 
 
-    let create_process = |table| {
-        let newprocess = process::Process{page_table: table};
-        return newprocess;
-    };          
+
+
+    // let create_process = |table| {
+    //     let newprocess = process::Process{page_table: table};
+    //     return newprocess;
+    // };          
 
     //TODO: Refactor this so that we use memory::alloc(allocator)
     let map_address = |process: &mut process::Process, address| {
@@ -229,7 +231,7 @@ pub unsafe extern "C" fn kmain()
     };          
 
     let user_table1 = create_table();
-    let mut process1 = create_process(user_table1);
+    let mut process1 = process::Process::create(user_table1);
     map_address(&mut process1, addr1);
     map_address(&mut process1, addr2);
 

@@ -10,6 +10,20 @@ pub struct TrapFrame {
     pub tf_x:       [u64; 30], //32
 }
 
+
+impl Default for TrapFrame {
+    fn default() -> TrapFrame {
+        TrapFrame {
+            tf_sp:      0,       
+            tf_lr:      0,       
+            tf_elr:     0,       
+            tf_spsr:    0,       
+            tf_esr:     0,       
+            tf_x:       [0; 30],    
+        }
+    }
+}
+
 // SizeOf = 32 + 30 * 8
 
 //TODO: Static assert?

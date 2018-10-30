@@ -1,5 +1,7 @@
 use memory;
+use memory::kalloc;
 use memory::FrameAllocator;
+use memory::LockedAreaFrameAllocator;
 use memory::physical_to_kernel;
 
 use memory::paging::entry::*;
@@ -115,18 +117,10 @@ impl<L> IndexMut<usize> for Table<L> where L: TableLevel {
     }
 }
 
-pub fn new<'a, 'b, A> (allocator: &'a mut A) -> &'b mut Table<Level4>
-    where A: FrameAllocator
+pub fn new<'a, 'b, A> (frame_allocator: &LockedAreaFrameAllocator) -> &'b mut Table<Level4>
 {
-    let new_pgt_frame = allocator
-        .allocate_frame()
-        .expect("No more frames");
-
-    let new_pgt_physical_address = new_pgt_frame
-        .start_address();
-
-    let new_pgt_virtual_address = memory::physical_to_kernel(new_pgt_physical_address);
-    let new_pgt_ptr: *mut Table<Level4> = new_pgt_virtual_address as *mut _;
+    let new_pgt = kalloc::alloc_page(frame_allocator);
+    let new_pgt_ptr: *mut Table<Level4> = new_pgt as *mut _;
     let new_pgt = unsafe { &mut (*new_pgt_ptr) };
 
     new_pgt
