@@ -1,3 +1,20 @@
+ASID improvements
+
+When ASID wrap around, flush TLB, increment generation -> will force process to request 
+a new ASID next time they are switched in.
+
+Set pages to non-global to enable ASID in TLB
+
+Set process ASID here:
+http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0500e/CIHFFGFG.html
+
+Select ASID here:
+http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0500e/CIHFFGFG.html
+
+Test a failure case where TLB flush means we read stale data. Then test non-global, ASID switch etc.
+
+
+
 Address Space management
 
 MapperT provides Page Table + Cache flags 
@@ -35,6 +52,14 @@ where T is a Mapper
 
     as.drop_segment(seg_id)
         mapperT::DropRange(self, pgt, old_range)
+
+
+similar to pmap API in BSD to manage protection bits
+    add_prot_read()
+    add_prot_write()
+    remove_prod_read()
+    remove_prod_write()
+
 
 
 Memory driver management
