@@ -143,7 +143,40 @@ pub unsafe extern "C" fn kmain()
         "Pushed some vec\n");
 
 
-    let _process = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
+    let mut process1 = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
+    process::switch_process(&mut process1);
+    memory::activate_el0(process1.address_space.page_table);
+
+
+    // Test out the mapping
+    let addr1 = 0x10000 -1; 
+    let data : *mut usize = addr1 as *mut usize;
+
+    // // TODO GET WORKING ON HARDWARE    
+    *data = 1024;
+    // write!(
+    //     kwriter::WRITER, 
+    //     "UPT1: Data at data: 0x{:X?}\n", 
+    //     *data);
+
+    // memory::activate_el0(user_table2);
+
+    // write!(
+    //     kwriter::WRITER, 
+    //     "Data at data: 0x{:X?}\n", 
+    //     *data);
+    //TODO GET WORKING ON HARDWARE
+
+
+
+
+
+
+
+
+
+
+
 
     // // Deadlock test TODO: Make this pass
     // if let Some(ref mut allocator) = *KERNEL_FRAME_ALLOCATOR.lock() {

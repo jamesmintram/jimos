@@ -8,8 +8,8 @@ pub fn alloc_frames(
     frame_count: usize) -> (Frame, Frame)
 {
     let mut lock = frame_allocator.lock();
-    if let Some(ref mut allocator) = *lock {
-        
+    if let Some(ref mut allocator) = *lock 
+    {    
         let start = allocator
             .allocate_frames(frame_count)
             .expect("No more darta");
@@ -21,6 +21,11 @@ pub fn alloc_frames(
     panic!()
 }
 
+pub fn alloc_frame(frame_allocator: &LockedAreaFrameAllocator) -> Frame
+{
+    let (frame, _) = alloc_frames(frame_allocator, 1);
+    return frame;
+}
 
 pub fn alloc_pages(
     allocator: &LockedAreaFrameAllocator, 
@@ -42,4 +47,17 @@ pub fn alloc_page(
     allocator: &LockedAreaFrameAllocator) -> *mut u8
 {
     return alloc_pages(allocator, 1);
+}
+
+pub fn deallocate_frame(
+    locked_allocator: &LockedAreaFrameAllocator,
+    frame: Frame)
+{
+    let mut lock = locked_allocator.lock();
+    if let Some(ref mut allocator) = *lock 
+    {
+        allocator.deallocate_frame(frame);
+    }
+    panic!()
+    
 }

@@ -1,7 +1,6 @@
 use arch::aarch64::frame;
 use arch::aarch64::arm;
 
-use memory;
 use memory::virtual_address;
 use process;
 
@@ -59,17 +58,9 @@ fn exception_from_esr(esr: u32) -> Exception {
     }
 }
 
-
-//TODO: This is temporary
-fn remap(process: &process::Process)
-{    
-    write!(kwriter::WRITER, "Switching out PGT\n");
-    memory::activate_el0(process.address_space.page_table);
-}
-
 fn data_abort(
     _frame: &frame::TrapFrame, 
-    process: &process::Process, 
+    process: &mut process::Process, 
     far: u64, 
     _low: bool)
 {
@@ -96,8 +87,13 @@ fn data_abort(
                 write!(
                     kwriter::WRITER,
                     "Fault address: {:?}\n",
-                    addr);   
-                remap(process);
+                    addr); 
+
+                 write!(kwriter::WRITER, "Map on demand\n");
+                
+                if process.address_space.handle_fault(addr) == false {
+                    panic!("Unable to satisfy page fault")
+                }
             },
 
             virtual_address::VirtualAddress::Kernel(_addr) => {

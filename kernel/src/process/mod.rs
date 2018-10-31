@@ -75,13 +75,13 @@ pub fn switch_process(next_process: &mut Process)
 }
 
 //TODO: Fix lifetime hack
-pub fn get_current_process() -> &'static Process<'static>
+pub fn get_current_process() -> &'static mut Process<'static>
 {
     let process_ptr_value = arm::get_thread_ptr();
-    let process_ptr = process_ptr_value as *const Process;
+    let process_ptr = process_ptr_value as *mut Process;
 
     //TODO: We need to validate this process address (Debug only maybe?)
 
-    let process: &Process = unsafe { &*process_ptr };
+    let process: &mut Process = unsafe { &mut *process_ptr };
     process
 }

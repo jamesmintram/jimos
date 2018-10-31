@@ -1,6 +1,5 @@
 use memory;
 use memory::kalloc;
-use memory::FrameAllocator;
 use memory::LockedAreaFrameAllocator;
 use memory::physical_to_kernel;
 
@@ -77,18 +76,15 @@ impl<L> Table<L> where L: HierarchicalLevel {
             .map(|address| unsafe { &mut *(address as *mut _) })
     }
 
-    pub fn next_table_create<A>(
+    pub fn next_table_create(
         &mut self,
         index: usize,
-        allocator: &mut A) -> &mut Table<L::NextLevel>
-            where A: FrameAllocator
+        allocator: &LockedAreaFrameAllocator) -> &mut Table<L::NextLevel>
     {
         if self.next_table(index).is_none() {
             
-            let frame = allocator
-                .allocate_frame()
-                .expect("no frames available");
-
+            let frame = kalloc::alloc_frame(allocator); 
+            
             self.entries[index]
                 .set(frame, PRESENT | TABLE_DESCRIPTOR);
 
