@@ -1,5 +1,6 @@
 use memory;
-use memory::FrameAllocator;
+use memory::kalloc;
+use memory::LockedAreaFrameAllocator;
 use memory::physical_to_kernel;
 
 use memory::paging::entry::*;
@@ -75,18 +76,15 @@ impl<L> Table<L> where L: HierarchicalLevel {
             .map(|address| unsafe { &mut *(address as *mut _) })
     }
 
-    pub fn next_table_create<A>(
+    pub fn next_table_create(
         &mut self,
         index: usize,
-        allocator: &mut A) -> &mut Table<L::NextLevel>
-            where A: FrameAllocator
+        allocator: &LockedAreaFrameAllocator) -> &mut Table<L::NextLevel>
     {
         if self.next_table(index).is_none() {
             
-            let frame = allocator
-                .allocate_frame()
-                .expect("no frames available");
-
+            let frame = kalloc::alloc_frame(allocator); 
+            
             self.entries[index]
                 .set(frame, PRESENT | TABLE_DESCRIPTOR);
 
@@ -115,18 +113,10 @@ impl<L> IndexMut<usize> for Table<L> where L: TableLevel {
     }
 }
 
-pub fn new<'a, 'b, A> (allocator: &'a mut A) -> &'b mut Table<Level4>
-    where A: FrameAllocator
+pub fn new (frame_allocator: &LockedAreaFrameAllocator) -> &mut Table<Level4>
 {
-    let new_pgt_frame = allocator
-        .allocate_frame()
-        .expect("No more frames");
-
-    let new_pgt_physical_address = new_pgt_frame
-        .start_address();
-
-    let new_pgt_virtual_address = memory::physical_to_kernel(new_pgt_physical_address);
-    let new_pgt_ptr: *mut Table<Level4> = new_pgt_virtual_address as *mut _;
+    let new_pgt = kalloc::alloc_page(frame_allocator);
+    let new_pgt_ptr: *mut Table<Level4> = new_pgt as *mut _;
     let new_pgt = unsafe { &mut (*new_pgt_ptr) };
 
     new_pgt

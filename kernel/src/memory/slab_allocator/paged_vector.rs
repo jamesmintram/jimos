@@ -29,7 +29,7 @@ impl PagedVectorPage {
 
     fn new(frame_allocator: &'static LockedAreaFrameAllocator) -> Box<PagedVectorPage> 
     {
-        let page = memory::alloct::<PagedVectorPage>(frame_allocator, 1);
+        let page = memory::alloct_pages::<PagedVectorPage>(frame_allocator, 1);
         unsafe {
             (*page).next = 0 as *mut PagedVectorPage;
             (*page).count = 0;

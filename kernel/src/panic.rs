@@ -5,6 +5,11 @@ use kwriter;
 
 use core::fmt::Write;
 
+
+extern "C" {
+    fn exit() -> !;
+}
+
 // This function is called on panic.
 #[panic_handler]
 pub fn panic_fmt(panic_info: &PanicInfo) -> !
@@ -20,9 +25,10 @@ pub fn panic_fmt(panic_info: &PanicInfo) -> !
         .downcast_ref::<i32>()
         .unwrap_or(&-1);
 
-    write!(kwriter::WRITER, "System Code: {:?}", cause);
+    write!(kwriter::WRITER, "System Code: {:?}\n", cause);
+    write!(kwriter::WRITER, "Panic Message: {:?}\n", panic_info.message());
 
-    write!(kwriter::WRITER,"\n\n");
+    //write!(kwriter::WRITER,"\n\n");
 
     if let Some(location) = panic_info.location() {
         write!(
@@ -31,17 +37,9 @@ pub fn panic_fmt(panic_info: &PanicInfo) -> !
             location.file(),
             location.line());
     } else {
-        write!(kwriter::WRITER,"Location: unkown");
+        write!(kwriter::WRITER,"Location: unknown");
     }
 
-    write!(kwriter::WRITER,"\n\n");
-
-    // write!(WRITER,"\n\nPANIC in {} at line {}:", file, line);
-    // write!(WRITER,"    {}", fmt);
-
-    //TODO: Reinstate
-    //unsafe {syscall::syscall(user::SYS_EXIT);}    
-     
-    //unsafe {syscall::syscall(100);}   
-    loop{}
+    write!(kwriter::WRITER,"\n\n"); 
+    unsafe {exit()};
 }
