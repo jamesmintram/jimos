@@ -20,6 +20,7 @@ pub struct AddressSpace<'a>
     pub page_table: &'a mut table::Table<table::Level4>,
 }
 
+#[derive(Clone,Copy)]
 pub struct AddressRange
 {
     pub start: usize,
@@ -98,6 +99,11 @@ impl<'a> AddressSpace<'a>
         map_segment(self.allocator, new_segment, self.page_table);
 
         return segment_id; 
+    }
+
+    pub fn get_segment_range(&self, segment_id: AddressSegmentId) -> AddressRange
+    {
+        return self.segments[segment_id.0].range;
     }
 
     fn get_segment(&self, segment_id: AddressSegmentId) -> &AddressSegment

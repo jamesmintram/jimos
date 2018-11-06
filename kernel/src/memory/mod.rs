@@ -8,6 +8,7 @@ pub mod slab_allocator;
 pub mod kalloc;
 
 use memory;
+
 use arch::aarch64::arm;
 
 use self::paging::PhysicalAddress;
@@ -84,12 +85,15 @@ pub fn virtual_to_physical(
          .map(|frame| frame.number * PAGE_SIZE + offset)
 }
 
-pub fn activate_el0(user_table: &Table<Level4>) 
+pub fn activate_address_space(address_space: &address_space::AddressSpace) 
 {
-    let user_table_ptr = user_table as *const _;
-    let user_table_address = user_table_ptr as usize;
-    let user_physical_table_address = memory::kernel_to_physical(user_table_address);
+    //TODO: Do we need an ASID? If so, get one. 
+    let as_table: &Table<Level4> = &address_space.page_table;
 
-    arm::set_ttbr0_el1(user_physical_table_address);
+    let as_table_ptr = as_table as *const _;
+    let as_table_address = as_table_ptr as usize;
+    let as_physical_table_address = memory::kernel_to_physical(as_table_address);
+
+    arm::set_ttbr0_el1(as_physical_table_address);
     arm::flush_tlb();
 }
