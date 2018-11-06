@@ -33,6 +33,7 @@ mod mailbox;
 mod panic;
 
 
+use core::slice;
 mod kwriter;
 use core::fmt::Write;
 
@@ -147,6 +148,23 @@ pub unsafe extern "C" fn kmain()
     }
 
 
+    //Dump program (Hacky hex print)
+    let phys_addr = 0x3F000000;
+    let kva_addr = memory::physical_to_kernel(phys_addr);
+    let kva_addr_ptr = kva_addr as *const u8;
+    let slice = unsafe { slice::from_raw_parts(kva_addr_ptr, 38) };
+
+    write!(kwriter::WRITER, "Ptr: {:X}\n", kva_addr);
+
+    for i in (0..slice.len()).step_by(2) {
+        if (i % 16 == 0) {
+            write!(kwriter::WRITER, "\n");
+        }
+
+        let l = slice[i];
+        let r = slice[i+1];
+        write!(kwriter::WRITER, "{:0>2X}{:0>2X} ", l, r);
+    }
 
     write!(kwriter::WRITER, "Exiting jimOS\n");
     exit();

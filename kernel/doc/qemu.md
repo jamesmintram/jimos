@@ -14,3 +14,12 @@ qemu-system-aarch64 -M raspi3 -semihosting -serial stdio -device loader,file=ker
 -display gtk    :: framebuffer
 -d int          ::  display interrupts
 -s -S           ::  debugging
+
+
+
+
+Loading ram files
+
+-device loader,file=build/blinky.bin,addr=0x0 
+-device loader,file=../csrc/build/prog1.bin,addr=0x30000000
+
