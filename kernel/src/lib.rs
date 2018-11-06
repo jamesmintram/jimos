@@ -20,6 +20,8 @@ extern crate alloc;
 
 extern crate spin;
 
+extern crate elf;
+
 pub mod lang_items;
 
 mod arch;
@@ -100,21 +102,21 @@ pub unsafe extern "C" fn kmain()
 
     // Heap Test
     //----------------------
-    let mut vec_test = vec![1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2,3,4,5,6,7];
-    vec_test[3] = 42;
+    // let mut vec_test = vec![1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2,3,4,5,6,7];
+    // vec_test[3] = 42;
 
-    for _i in 0..1098 {
-        vec_test.push(1);
-    }
+    // for _i in 0..1098 {
+    //     vec_test.push(1);
+    // }
 
-    for i in &vec_test {
-        write!(kwriter::WRITER,"{} ", i);
-    }
+    // for i in &vec_test {
+    //     write!(kwriter::WRITER,"{} ", i);
+    // }
 
-    write!(
-        kwriter::WRITER, 
-        "Pushed some vec\n");
-
+    // write!(
+    //     kwriter::WRITER, 
+    //     "Pushed some vec\n");
+    //----------------------
 
     let mut process1 = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
     {
@@ -136,27 +138,15 @@ pub unsafe extern "C" fn kmain()
         *data = 1024;
     }
 
-
-    for i in 0..512
-    {
-        let mut vec_test = vec![1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2,3,4,5,6,7];
-        vec_test[3] = 42;
-
-        for _j in 0..i {
-            vec_test.push(1);
-        }
-    }
-
-
     //Dump program (Hacky hex print)
     let phys_addr = 0x3F000000;
     let kva_addr = memory::physical_to_kernel(phys_addr);
     let kva_addr_ptr = kva_addr as *const u8;
-    let slice = unsafe { slice::from_raw_parts(kva_addr_ptr, 38) };
+    let slice = unsafe { slice::from_raw_parts(kva_addr_ptr, 1024 * 128) };
 
     write!(kwriter::WRITER, "Ptr: {:X}\n", kva_addr);
 
-    for i in (0..slice.len()).step_by(2) {
+    for i in (0..64).step_by(2) {
         if (i % 16 == 0) {
             write!(kwriter::WRITER, "\n");
         }
@@ -165,6 +155,23 @@ pub unsafe extern "C" fn kmain()
         let r = slice[i+1];
         write!(kwriter::WRITER, "{:0>2X}{:0>2X} ", l, r);
     }
+
+    //Load elf
+    let elf = elf::Elf::from_data(&slice).ok().unwrap();
+    write!(kwriter::WRITER, "Header: {:#?}", elf.header());
+    write!(kwriter::WRITER, "Prog Header: {:#?}", elf.program_header());
+
+    write!(kwriter::WRITER, "\n\nSECTIONS:\n\n",);
+
+    for section in elf.sections_iter()
+    {
+        write!(kwriter::WRITER, "Section: {:#?}", section);
+    }
+    // match elf::Elf::from_data(&slice) {
+    //     Err(err) => write!(kwriter::WRITER, "ELF: {:#?}\n", err),
+    //     _ => write!(kwriter::WRITER, "ELF Loaded\n"),
+    // };
+    
 
     write!(kwriter::WRITER, "Exiting jimOS\n");
     exit();

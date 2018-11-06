@@ -70,6 +70,7 @@ pub struct ElfHeader
     shstrndx: u16,      //Section name string table index
 }
 
+#[derive(Debug)]
 pub enum ElfError {
     NotEnoughData,
     InvalidMagicNumber,
@@ -188,11 +189,11 @@ impl<'a> Iterator for ElfSectionHeaderIter<'a>
 }
 
 //------------------------------------------------
+//TODO: This is something that should live in the kernel
 
 pub enum ExeElfError {
     
 }
-
 
 //TODO: Implement a trait that we need to use when executing an image
 pub struct ExecutableElf<'a>
@@ -206,6 +207,7 @@ impl<'a> ExecutableElf<'a>
     pub fn from_elf(elf: &'a Elf) -> Result<ExecutableElf<'a>, ExeElfError>
     {
         //TODO: Validate Architecture
+        //TODO: Validate Program's virtual address
 
         Ok(ExecutableElf { elf })
     }

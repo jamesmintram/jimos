@@ -1,3 +1,7 @@
+Cleanup
+    Fix-up write! to work as println! instead
+    Remove all of the Result warnings for printing
+
 Process
     Execute a process in EL0 that triggers an on demand page in
         Demarcate a segment of special code to be copied as a process "image" using linkerscript trickery

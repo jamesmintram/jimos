@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 memmap = "0.7.0"
-elf = { path = "../elf" }
+elf = { path = "../../shared/elf" }
