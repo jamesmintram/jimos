@@ -1,3 +1,7 @@
+#![no_std]
+
+use core::mem;
+
 #[repr(C)]
 #[derive(Debug)]
 pub struct ElfProgramHeaderTable
@@ -66,6 +70,11 @@ pub struct ElfHeader
     shstrndx: u16,      //Section name string table index
 }
 
+pub enum ElfError {
+    NotEnoughData,
+    InvalidMagicNumber,
+}
+
 pub struct Elf<'a>
 {
     data: &'a[u8],
@@ -73,22 +82,32 @@ pub struct Elf<'a>
 }
 impl<'a> Elf<'a>
 {
-    //TODO: Make a Result type and return various error codes
-    pub fn from_data(data: &'a [u8]) -> Elf<'a>
+    pub fn from_data(data: &'a [u8]) -> Result<Elf<'a>, ElfError>
     {
-        //TODO: Validate len
-        //TODO: Validate magic numbers
+        if data.len() < mem::size_of::<ElfHeader>()
+        {
+            return Err(ElfError::NotEnoughData);
+        }
 
         let header_ptr = &data[0] 
             as *const _ 
             as *const ElfHeader;
 
         let header = unsafe{header_ptr.as_ref().unwrap()};
+        let ident = &header.ident;
 
-        Elf{
+        if ident.magic[0] != 127
+            || ident.magic[1] != 69
+            || ident.magic[2] != 76
+            || ident.magic[3] != 70 
+        {
+                return Err(ElfError::InvalidMagicNumber);
+        }
+
+        Ok(Elf {
             data: data,
             header: header,
-        }
+        })
     }
 
     pub fn header(&self) -> &ElfHeader
@@ -96,27 +115,43 @@ impl<'a> Elf<'a>
         return self.header
     }
 
-    pub fn program_header(&self) -> &ElfProgramHeaderTable
+    pub fn program_header(&self) -> Option<&ElfProgramHeaderTable>
     {
-        let prog_header_ptr = &self.data[self.header.phoff] 
+        let header_size = self.header.phentsize as usize;
+        let header_start = self.header.phoff;
+        let header_end = header_start + header_size;
+
+        if header_end >= self.data.len()
+        {
+            return None;
+        }
+
+        let prog_header_ptr = &self.data[header_start] 
             as *const _ 
             as *const ElfProgramHeaderTable;
 
         let prog_header = unsafe{prog_header_ptr.as_ref().unwrap()};
-        prog_header
+
+        Some(prog_header)
     }
 
     pub fn get_section(&self, idx: u16) -> Option<&'a ElfSectionHeader>
     {
-        if idx >= self.header.shnum {
+        if idx >= self.header.shnum 
+        {
+            return None;
+        }
+        
+        let section_size = self.header.shentsize as usize;
+        let section_start = self.header.shoff + section_size * idx as usize;
+        let section_end = section_start + section_size;
+
+        if section_end >= self.data.len()
+        {
             return None;
         }
 
-        let section_ptr_offset = 
-            self.header.shoff 
-            +  self.header.shentsize as usize * idx as usize;
-
-        let section_ptr = &self.data[section_ptr_offset] 
+        let section_ptr = &self.data[section_start] 
             as *const _ 
             as *const ElfSectionHeader;
 
@@ -127,7 +162,7 @@ impl<'a> Elf<'a>
 
     pub fn sections_iter(&'a self) -> ElfSectionHeaderIter<'a>
     {
-        ElfSectionHeaderIter{
+        ElfSectionHeaderIter {
             idx: 0,
             elf: self,
         }
@@ -143,7 +178,8 @@ pub struct ElfSectionHeaderIter<'a>
 impl<'a> Iterator for ElfSectionHeaderIter<'a>
 {
     type Item = &'a ElfSectionHeader;
-    fn next(&mut self) -> Option<Self::Item> {
+    fn next(&mut self) -> Option<Self::Item> 
+    {
         let item = self.elf.get_section(self.idx);
         self.idx += 1;
 
@@ -152,6 +188,11 @@ impl<'a> Iterator for ElfSectionHeaderIter<'a>
 }
 
 //------------------------------------------------
+
+pub enum ExeElfError {
+    
+}
+
 
 //TODO: Implement a trait that we need to use when executing an image
 pub struct ExecutableElf<'a>
@@ -162,10 +203,10 @@ pub struct ExecutableElf<'a>
 impl<'a> ExecutableElf<'a>
 {
     //TODO: Return a result type
-    pub fn from_elf(elf: &'a Elf) -> ExecutableElf<'a>
+    pub fn from_elf(elf: &'a Elf) -> Result<ExecutableElf<'a>, ExeElfError>
     {
         //TODO: Validate Architecture
 
-        ExecutableElf { elf }
+        Ok(ExecutableElf { elf })
     }
 }
