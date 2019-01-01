@@ -26,7 +26,7 @@ SECTIONS {
         . = 0x80000;  /* Space for command line.  */
 
         KEEP(build/head.o (.text))
-	KEEP(build/jtag.o (.text))
+	      KEEP(build/jtag.o (.text))
   }
 
   .boot.data : {

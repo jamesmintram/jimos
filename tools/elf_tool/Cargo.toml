@@ -1,0 +1,9 @@
+[package]
+name = "elf_tool"
+version = "0.1.0"
+authors = ["James Mintram <jamesmintram@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+memmap = "0.7.0"
+elf = { path = "../../shared/elf" }

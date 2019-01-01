@@ -1,3 +1,4 @@
+use memory;
 use memory::LockedAreaFrameAllocator;  
 use memory::address_space;
 
@@ -14,6 +15,7 @@ pub struct Process<'a>
 
     // Context
     pub frame: TrapFrame,
+    //TODO: Kernel Stack
 
     //TODO:
     /*
@@ -30,6 +32,20 @@ pub struct Process<'a>
     
 */
 
+pub const ONE_MB: usize = 0x100000;
+pub const ONE_GB: usize = 0x40000000;
+
+pub const DEFAULT_TEXT_BASE: usize = ONE_MB; 
+pub const DEFAULT_TEXT_SIZE: usize = 0; 
+
+pub const DEFAULT_HEAP_BASE: usize = ONE_GB; 
+pub const DEFAULT_HEAP_SIZE: usize = ONE_MB * 32; 
+pub const DEFAULT_HEAP_MAX_SIZE: usize = ONE_GB * 8; 
+
+pub const DEFAULT_STACK_BASE: usize = ONE_GB * 32; 
+pub const DEFAULT_STACK_SIZE: usize = ONE_MB; 
+pub const DEFAULT_STACK_MAX_SIZE: usize = ONE_MB * 8; 
+
 impl<'a> Process<'a>
 {
     pub fn new(allocator: &'a LockedAreaFrameAllocator) -> Process<'a>
@@ -41,13 +57,13 @@ impl<'a> Process<'a>
         let mut new_as = address_space::AddressSpace::new(allocator);    
         
         let heap_desc = address_space::AddressSegmentDesc{
-            range: address_space::AddressRange{start: 0x10000, end: 0xFFFFF},
+            range: address_space::AddressRange{start: DEFAULT_HEAP_BASE, end: DEFAULT_HEAP_BASE + DEFAULT_HEAP_SIZE},
         };
         let text_desc = address_space::AddressSegmentDesc{
-            range: address_space::AddressRange{start: 0x100000, end: 0xFFFFFF},
+            range: address_space::AddressRange{start: DEFAULT_TEXT_BASE, end: DEFAULT_TEXT_BASE + DEFAULT_TEXT_SIZE},
         };
         let stack_desc = address_space::AddressSegmentDesc{
-            range: address_space::AddressRange{start: 0x1000000, end: 0xFFFFFFF},
+            range: address_space::AddressRange{start: DEFAULT_STACK_BASE, end: DEFAULT_STACK_BASE + DEFAULT_STACK_SIZE},
         };
 
         let head_seg_id = new_as.add_segment(&heap_desc);
@@ -65,6 +81,37 @@ impl<'a> Process<'a>
 
         return new_process;
     }
+
+    pub fn exec(&mut self) //TODO: Pass in an "image" to execute
+    {
+        //TODO(Later): Reset the HEAP segment (release all physical pages)
+        //TODO(Later): Release all of the text segments physical pages
+
+        //TODO: Reset the text segment size to the image size
+        //TODO: Pre-fault the whole text segment
+        //TODO: Copy the executable image into the text area
+
+        // Prepare our frame structure for a later call to return_to_userspace
+        let stack_range = self.address_space.get_segment_range(self.heap);
+        let text_range = self.address_space.get_segment_range(self.text);
+
+        let ref mut frame = &mut self.frame;
+        frame.tf_sp = stack_range.start as u64;
+        frame.tf_lr = 0;
+        frame.tf_elr = text_range.start as u64;
+
+        //Spsr
+        //esr
+        //tf_x -> 0
+
+        //No need to set x29/x30 as there have been no BL
+    }
+}
+
+pub fn return_to_userspace()
+{
+    //Restore process registers
+    //Call eret
 }
 
 pub fn switch_process(next_process: &mut Process) 
@@ -72,6 +119,9 @@ pub fn switch_process(next_process: &mut Process)
     //Set the thread pointer to this
     let process_ptr = (next_process as *const _) as usize;
     arm::set_thread_ptr(process_ptr);
+
+    //Switch the page table 
+    memory::activate_address_space(&next_process.address_space);
 }
 
 //TODO: Fix lifetime hack

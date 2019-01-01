@@ -20,6 +20,8 @@ extern crate alloc;
 
 extern crate spin;
 
+extern crate elf;
+
 pub mod lang_items;
 
 mod arch;
@@ -33,6 +35,7 @@ mod mailbox;
 mod panic;
 
 
+use core::slice;
 mod kwriter;
 use core::fmt::Write;
 
@@ -95,6 +98,87 @@ pub unsafe extern "C" fn kmain()
 
     HEAP_ALLOCATOR.init(&KERNEL_FRAME_ALLOCATOR);
 
+
+
+    // Heap Test
+    //----------------------
+    // let mut vec_test = vec![1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2,3,4,5,6,7];
+    // vec_test[3] = 42;
+
+    // for _i in 0..1098 {
+    //     vec_test.push(1);
+    // }
+
+    // for i in &vec_test {
+    //     write!(kwriter::WRITER,"{} ", i);
+    // }
+
+    // write!(
+    //     kwriter::WRITER, 
+    //     "Pushed some vec\n");
+    //----------------------
+
+    let mut process1 = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
+    {
+        process1.exec();
+    }
+    {
+        process::switch_process(&mut process1);
+        process::return_to_userspace();
+    }
+    {   //TODO: Move this into a process
+        let heap_id = process1.heap;
+        let heap_range = process1.address_space.get_segment_range(heap_id);
+
+        // Test out the mapping
+        let addr1 = heap_range.start;
+        let data : *mut usize = addr1 as *mut usize;
+
+        //TODO: GET WORKING ON HARDWARE    
+        *data = 1024;
+    }
+
+    //Dump program (Hacky hex print)
+    let phys_addr = 0x3F000000;
+    let kva_addr = memory::physical_to_kernel(phys_addr);
+    let kva_addr_ptr = kva_addr as *const u8;
+    let slice = unsafe { slice::from_raw_parts(kva_addr_ptr, 1024 * 128) };
+
+    write!(kwriter::WRITER, "Ptr: {:X}\n", kva_addr);
+
+    for i in (0..64).step_by(2) {
+        if (i % 16 == 0) {
+            write!(kwriter::WRITER, "\n");
+        }
+
+        let l = slice[i];
+        let r = slice[i+1];
+        write!(kwriter::WRITER, "{:0>2X}{:0>2X} ", l, r);
+    }
+
+    //Load elf
+    let elf = elf::Elf::from_data(&slice).ok().unwrap();
+    write!(kwriter::WRITER, "Header: {:#?}", elf.header());
+    write!(kwriter::WRITER, "Prog Header: {:#?}", elf.program_header());
+
+    write!(kwriter::WRITER, "\n\nSECTIONS:\n\n",);
+
+    for section in elf.sections_iter()
+    {
+        write!(kwriter::WRITER, "Section: {:#?}", section);
+    }
+    // match elf::Elf::from_data(&slice) {
+    //     Err(err) => write!(kwriter::WRITER, "ELF: {:#?}\n", err),
+    //     _ => write!(kwriter::WRITER, "ELF Loaded\n"),
+    // };
+    
+
+    write!(kwriter::WRITER, "Exiting jimOS\n");
+    exit();
+    
+    // Create a new process
+    // Schedule process
+}
     //TODO: Wrap HeapSlabAllocator in a Mutex and replace HEAP_ALLOCATOR
     //      Implement alloc and release
     //      Churn memory with old and see crash
@@ -123,37 +207,10 @@ pub unsafe extern "C" fn kmain()
     //      Test
     //          Kernel address fault = kernel panic
 
-    
-
-    // Heap Test
-    //----------------------
-    let mut vec_test = vec![1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2,3,4,5,6,7];
-    vec_test[3] = 42;
-
-    for _i in 0..1098 {
-        vec_test.push(1);
-    }
-
-    for i in &vec_test {
-        write!(kwriter::WRITER,"{} ", i);
-    }
-
-    write!(
-        kwriter::WRITER, 
-        "Pushed some vec\n");
 
 
-    let mut process1 = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
-    process::switch_process(&mut process1);
-    memory::activate_el0(process1.address_space.page_table);
 
 
-    // Test out the mapping
-    let addr1 = 0x10000 -1; 
-    let data : *mut usize = addr1 as *mut usize;
-
-    // // TODO GET WORKING ON HARDWARE    
-    *data = 1024;
     // write!(
     //     kwriter::WRITER, 
     //     "UPT1: Data at data: 0x{:X?}\n", 
@@ -166,16 +223,6 @@ pub unsafe extern "C" fn kmain()
     //     "Data at data: 0x{:X?}\n", 
     //     *data);
     //TODO GET WORKING ON HARDWARE
-
-
-
-
-
-
-
-
-
-
 
 
     // // Deadlock test TODO: Make this pass
@@ -325,15 +372,7 @@ pub unsafe extern "C" fn kmain()
     //     "UPT1: Data at data: 0x{:X?}\n", 
     //     *data);
 
-    for i in 0..512
-    {
-        let mut vec_test = vec![1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2,3,4,5,6,7];
-        vec_test[3] = 42;
 
-        for _j in 0..i {
-            vec_test.push(1);
-        }
-    }
     // let mut vec_test = vec![1,2,3,4,5,6,7];
     // vec_test[3] = 42;
     // for i in &vec_test {
@@ -351,11 +390,3 @@ pub unsafe extern "C" fn kmain()
 
     //     memory::flush_tlb();
     // }
-
-    write!(kwriter::WRITER, "Exiting jimOS\n");
-    exit();
-    
-    // Create a new process
-    // Schedule process
-}
-
