@@ -1,6 +1,3 @@
-use kwriter;
-use core::fmt::Write;
-
 //TODO: Remove this later
 use uart;
 
@@ -30,7 +27,7 @@ fn k_print_el()
              :
              );
     }
-    write!(kwriter::WRITER, "Exception level: {}\n", c);
+    println!("Exception level: {}\n", c);
 }
 
 fn k_exit()
@@ -46,7 +43,7 @@ pub unsafe extern "C" fn int_syscall(
     p2: usize,
     p3: usize) -> i32
 {
-    write!(kwriter::WRITER, "Syscall: {}\n", call_id);
+    println!("Syscall: {}\n", call_id);
 
     if call_id == SYS_PRINT {
         k_print_el();
@@ -57,7 +54,7 @@ pub unsafe extern "C" fn int_syscall(
     }
     if call_id == SYS_WRITE {
 
-         write!(kwriter::WRITER, "PRINT: {} :: {} :: {}\n", p1, p2, p3);
+         println!("PRINT: {} :: {} :: {}\n", p1, p2, p3);
 
         let str_data = p2 as  *const u8;
         let str_len = p3 as isize;

@@ -21,6 +21,18 @@ impl fmt::Write for Writer {
     }
 }
 
+macro_rules! println {
+    ($fmt:expr) => (print!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+}
+
+macro_rules! print {
+    ($($arg:tt)*) => ({
+        use core::fmt::Write;
+        $crate::kwriter::WRITER.write_fmt(format_args!($($arg)*)).unwrap();
+    });
+}
+
 // pub fn write_str(s: &str) {
 //     for byte in s.bytes() {
 //       uart::uart_send_byte(byte)

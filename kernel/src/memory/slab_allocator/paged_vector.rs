@@ -6,9 +6,6 @@ use memory::LockedAreaFrameAllocator;
 use core::slice;
 use core::mem::size_of;
 
-use kwriter;
-use core::fmt::Write;
-
 use memory::slab_allocator::bucket::Bucket;
 
 struct PagedVectorPage {
@@ -79,7 +76,7 @@ impl PagedVector
     {
         let first_page = PagedVectorPage::new(allocator);
 
-        write!(kwriter::WRITER, "PagedVector created, {} descriptors per Page\n", first_page.max());
+        println!("PagedVector created, {} descriptors per Page\n", first_page.max());
 
         return PagedVector{
             head: first_page,
@@ -97,10 +94,10 @@ impl PagedVector
 
         //TODO: Go page by page
         for ref mut bucket in buckets.iter_mut() {
-            //write!(kwriter::WRITER, "Iter bucket!\n");
+            //println!("Iter bucket!\n");
             if pred(bucket)
             {
-                //write!(kwriter::WRITER, "Found bucket!\n");
+                //println!("Found bucket!\n");
                 return Some(update(bucket));
             }
         }
@@ -116,7 +113,7 @@ impl PagedVector
     {
         if self.head.is_full() == false 
         {
-            //write!(kwriter::WRITER, "Add bucket!\n");
+            //println!("Add bucket!\n");
 
             let mut new_bucket = create();
             let result = update(&mut new_bucket);
@@ -126,7 +123,7 @@ impl PagedVector
         }
         
         //If I can not add a bucket (because the descriptor page is full?)
-        write!(kwriter::WRITER, "Failed to create a new bucket\n");
+        println!("Failed to create a new bucket\n");
         None
     }
 }

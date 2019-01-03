@@ -3,9 +3,6 @@ use core;
 use memory;
 use memory::Frame;
 
-use kwriter;
-use core::fmt::Write;
-
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BucketStatus {
     Unused,
@@ -36,7 +33,7 @@ impl Bucket {
         //TODO: Update this to use Option?
         if self.first_free == LIST_END 
         {
-            write!(kwriter::WRITER, "Bucket Full\n");
+            println!("Bucket Full\n");
             return 0 as *mut u8;
         }
 
@@ -44,11 +41,11 @@ impl Bucket {
             let current_head = self.first_free as *mut usize;
             let next_head = *current_head;
 
-            // write!(kwriter::WRITER,  "Current head: {:X}\n", current_head as usize);
+            // println!( "Current head: {:X}\n", current_head as usize);
 
             self.first_free = next_head;
-            // write!(kwriter::WRITER, "Take FF {:X}\n", self.first_free);
-            // write!(kwriter::WRITER, "Take RET {:X}\n", current_head as usize);
+            // println!("Take FF {:X}\n", self.first_free);
+            // println!("Take RET {:X}\n", current_head as usize);
 
             //TODO: Memset to zero before returning
             return current_head as *mut u8;
@@ -62,7 +59,7 @@ impl Bucket {
             panic!();
         }
 
-        // write!(kwriter::WRITER, "PreRelease FF {:X}\n", self.first_free);
+        // println!("PreRelease FF {:X}\n", self.first_free);
 
         // Put this at the start of the freelist
         unsafe {
@@ -71,8 +68,8 @@ impl Bucket {
             self.first_free = ptr as usize;
         }
 
-        // write!(kwriter::WRITER, "Release PT {:X}\n", ptr as usize);
-        // write!(kwriter::WRITER, "Release FF {:X}\n", self.first_free);
+        // println!("Release PT {:X}\n", ptr as usize);
+        // println!("Release FF {:X}\n", self.first_free);
     }
 
     pub fn contains(&self, ptr: *const u8) -> bool
@@ -120,8 +117,7 @@ impl Bucket {
             next_ptr.write(LIST_END);
         }
 
-        write!(
-            kwriter::WRITER, 
+        println!( 
             "Object size {} Bucket size: {}  Objects: {}\n", 
             object_size,
             bucket_byte_size, 

@@ -7,7 +7,6 @@
 
 #![feature(alloc_error_handler)] 
 #![feature(allocator_api)]
-#![feature(min_const_fn)]
 
 //Temporary
 #![allow(dead_code)]
@@ -15,7 +14,7 @@
 #[macro_use]
 extern crate bitflags;
 
-#[macro_use]
+// #[macro_use]
 extern crate alloc;
 
 extern crate spin;
@@ -23,6 +22,9 @@ extern crate spin;
 extern crate elf;
 
 pub mod lang_items;
+
+#[macro_use]
+mod kwriter;
 
 mod arch;
 mod memory;
@@ -34,10 +36,7 @@ mod gpio;
 mod mailbox;
 mod panic;
 
-
 use core::slice;
-mod kwriter;
-use core::fmt::Write;
 
 use memory::LockedAreaFrameAllocator;
 use memory::slab_allocator::LockedSlabHeap;
@@ -76,15 +75,15 @@ pub unsafe extern "C" fn kmain()
     
     uart::uart_init();
 
-    write!(kwriter::WRITER, "UART init\n");
+    println!("UART init");
     
     arm::print_cache_info();
 
-    write!(kwriter::WRITER, "Building kernel page tables\n");
+    println!("Building kernel page tables\n");
 
     let kernel_end_addr =  (&kernel_end as *const _) as usize;
 
-    write!(kwriter::WRITER, "Kernel ends at {}\n", kernel_end_addr);
+    println!("Kernel ends at {}\n", kernel_end_addr);
 
     // Initialise the heaps
     let heap_start = kernel_end_addr + memory::KERNEL_ADDRESS_START;
@@ -142,38 +141,38 @@ pub unsafe extern "C" fn kmain()
     let phys_addr = 0x3F000000;
     let kva_addr = memory::physical_to_kernel(phys_addr);
     let kva_addr_ptr = kva_addr as *const u8;
-    let slice = unsafe { slice::from_raw_parts(kva_addr_ptr, 1024 * 128) };
+    let slice = slice::from_raw_parts(kva_addr_ptr, 1024 * 128);
 
-    write!(kwriter::WRITER, "Ptr: {:X}\n", kva_addr);
+    println!("Ptr: {:X}\n", kva_addr);
 
     for i in (0..64).step_by(2) {
-        if (i % 16 == 0) {
-            write!(kwriter::WRITER, "\n");
+        if i % 16 == 0 {
+            println!("\n");
         }
 
         let l = slice[i];
         let r = slice[i+1];
-        write!(kwriter::WRITER, "{:0>2X}{:0>2X} ", l, r);
+        println!("{:0>2X}{:0>2X} ", l, r);
     }
 
     //Load elf
     let elf = elf::Elf::from_data(&slice).ok().unwrap();
-    write!(kwriter::WRITER, "Header: {:#?}", elf.header());
-    write!(kwriter::WRITER, "Prog Header: {:#?}", elf.program_header());
+    println!("Header: {:#?}", elf.header());
+    println!("Prog Header: {:#?}", elf.program_header());
 
-    write!(kwriter::WRITER, "\n\nSECTIONS:\n\n",);
+    println!("\n\nSECTIONS:\n\n",);
 
     for section in elf.sections_iter()
     {
-        write!(kwriter::WRITER, "Section: {:#?}", section);
+        println!("Section: {:#?}", section);
     }
     // match elf::Elf::from_data(&slice) {
-    //     Err(err) => write!(kwriter::WRITER, "ELF: {:#?}\n", err),
-    //     _ => write!(kwriter::WRITER, "ELF Loaded\n"),
+    //     Err(err) => println!("ELF: {:#?}\n", err),
+    //     _ => println!("ELF Loaded\n"),
     // };
     
 
-    write!(kwriter::WRITER, "Exiting jimOS\n");
+    println!("Exiting jimOS\n");
     exit();
     
     // Create a new process

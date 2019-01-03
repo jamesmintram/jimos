@@ -4,9 +4,6 @@ use arch::aarch64::arm;
 use memory::virtual_address;
 use process;
 
-use kwriter;
-use core::fmt::Write;
-
 #[allow(non_camel_case_types)]
 
 #[derive(Copy, Clone ,Debug, PartialEq)]
@@ -84,12 +81,11 @@ fn data_abort(
     if let Some(address) = fault_address {
         match address {
             virtual_address::VirtualAddress::User(addr) => {
-                write!(
-                    kwriter::WRITER,
+                println!(
                     "Fault address: {:?}\n",
                     addr); 
 
-                 write!(kwriter::WRITER, "Map on demand\n");
+                 println!( "Map on demand\n");
                 
                 if process.address_space.handle_fault(addr) == false {
                     panic!("Unable to satisfy page fault")
@@ -97,15 +93,13 @@ fn data_abort(
             },
 
             virtual_address::VirtualAddress::Kernel(_addr) => {
-                write!(
-                    kwriter::WRITER,
+                println!(
                     "Kernel Page Fault: 0x{:X}\n", far);    
                     panic!("Unkown address");    
             },
         } 
     } else {
-        write!(
-            kwriter::WRITER,
+        println!(
             "Invalid address: 0x{:X}\n", far);    
             panic!("Unkown address");
     }
@@ -149,14 +143,14 @@ fn dump_regs(frame: &frame::TrapFrame)
 {
     // borrow of packed field is unsafe and requires unsafe function or block
     unsafe {
-        write!(kwriter::WRITER,"SP: {:X}  {}\n", frame.tf_sp, frame.tf_sp);
-        write!(kwriter::WRITER,"LR: {:X}  {}\n", frame.tf_lr, frame.tf_lr);
-        write!(kwriter::WRITER,"ELR: {:X}  {}\n", frame.tf_elr, frame.tf_elr);
-        write!(kwriter::WRITER,"SPSR: {:X}  {}\n", frame.tf_spsr, frame.tf_spsr);
-        write!(kwriter::WRITER,"ESR: {:X}  {}\n", frame.tf_esr, frame.tf_esr);
+        println!("SP: {:X}  {}\n", frame.tf_sp, frame.tf_sp);
+        println!("LR: {:X}  {}\n", frame.tf_lr, frame.tf_lr);
+        println!("ELR: {:X}  {}\n", frame.tf_elr, frame.tf_elr);
+        println!("SPSR: {:X}  {}\n", frame.tf_spsr, frame.tf_spsr);
+        println!("ESR: {:X}  {}\n", frame.tf_esr, frame.tf_esr);
 
         for i in 0..30  {
-            write!(kwriter::WRITER,"X{}: {:X}\n", i, frame.tf_x[i]);
+            println!("X{}: {:X}\n", i, frame.tf_x[i]);
         }
     }
 }

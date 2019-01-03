@@ -80,17 +80,13 @@ impl AreaFrameAllocator {
             len: adjusted_page_frame_count,
         };
 
+        println!("Allocator\n",);
+        println!("\tFirst page frame: {}\n", allocator.next_free_frame.number);
+        println!("\tLast page frame: {}\n",  allocator.last_frame.number);
+        println!("\tPage frame count: {}\n", adjusted_page_frame_count);
 
-        use kwriter;
-        use core::fmt::Write;
-
-        write!(kwriter::WRITER, "Allocator\n",);
-        write!(kwriter::WRITER, "\tFirst page frame: {}\n", allocator.next_free_frame.number);
-        write!(kwriter::WRITER, "\tLast page frame: {}\n",  allocator.last_frame.number);
-        write!(kwriter::WRITER, "\tPage frame count: {}\n", adjusted_page_frame_count);
-
-        write!(kwriter::WRITER, "\tAllocator size (bytes): {}\n", allocator_size);
-        write!(kwriter::WRITER, "\tAllocator size (page frames): {}\n", allocator_size / memory::PAGE_SIZE);
+        println!("\tAllocator size (bytes): {}\n", allocator_size);
+        println!("\tAllocator size (page frames): {}\n", allocator_size / memory::PAGE_SIZE);
 
         allocator
     }   

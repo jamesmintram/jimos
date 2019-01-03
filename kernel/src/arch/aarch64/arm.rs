@@ -153,11 +153,8 @@ pub fn cache_setup()
 pub fn print_cache_info()
 {
     unsafe {
-        use kwriter;
-        use core::fmt::Write;
-
-        write!(kwriter::WRITER, "DCache size: {}\n", D_CACHE_LINE_SIZE);
-        write!(kwriter::WRITER, "ICache size: {}\n", I_CACHE_LINE_SIZE);
+        println!("DCache size: {}\n", D_CACHE_LINE_SIZE);
+        println!("ICache size: {}\n", I_CACHE_LINE_SIZE);
     }
 }
 
