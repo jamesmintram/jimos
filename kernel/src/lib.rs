@@ -119,81 +119,33 @@ pub unsafe extern "C" fn kmain()
     //     "Pushed some vec\n");
     //----------------------
 
-    let mut process1 = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
-    {
-        process1.exec();
-    }
-    {
-        process::switch_process(&mut process1);
-        process::return_to_userspace();
-    }
-    {   //TODO: Move this into a process
-        let heap_id = process1.heap;
-        let heap_range = process1.address_space.get_segment_range(heap_id);
-
-        // Test out the mapping
-        let addr1 = heap_range.start;
-        let data : *mut usize = addr1 as *mut usize;
-
-        //TODO: GET WORKING ON HARDWARE    
-        //*data = 1024;
-    }
-
     // //Dump program (Hacky hex print)
     let phys_addr = 0x3F000000;
     let kva_addr = memory::physical_to_kernel(phys_addr);
     let kva_addr_ptr = kva_addr as *const u8;
     let slice = slice::from_raw_parts(kva_addr_ptr, 1024 * 128);
 
-
     //Load elf
     let elf = elf::Elf::from_data(&slice).ok().unwrap();
-    println!("Header: {:#?}", elf.header());
-    println!("Prog Header: {:#?}", elf.program_header());
 
-    println!("\n\nSECTIONS:\n\n",);
-    for section in elf.sections_iter()
+    let mut process1 = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
     {
-        println!("Section: {:#?}", section);
-        println!("Offset: {:X}", section.file_offset );
-        println!("Vaddr:  {:X}", section.addr );
-
-        if section.section_type == 1  && section.addr == process::DEFAULT_TEXT_BASE {
-            let data = elf.get_section_data(section).unwrap();
-            let dest = section.addr as *mut u8;
-
-            for i in 0..data.len() {
-                //HACK: Copy executable data in RAM
-                unsafe {
-                    *dest.offset(i as isize) = data[i];
-                }
-
-                if i % 16 == 0 {
-                    let addr = section.file_offset + i;
-
-                    print!("\n");
-                    print!("{:0>X}: ", addr)
-                } 
-                else if i % 2 == 0 {
-                    print!(" ")
-                }
-
-                let l = data[i];
-                print!("{:0>2X}", l);
-            }
-            
-        }
-        println!("----------------------------------------");
+        process::switch_process(&mut process1);
+        process1.exec(&elf);
+        process::return_to_userspace();
     }
-    //-------------------------------------------------------------
 
-    //Now jump to the code we have just copied into memory
-    type EntryPoint = extern fn() -> ();
-    let ep = (&process::DEFAULT_TEXT_BASE as *const usize) as *const EntryPoint;
-    (*ep)();
+    let mut process2 = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
+    {
+        process::switch_process(&mut process2);
+        process2.exec(&elf);
+        process::return_to_userspace();
+    }
+
     //TODO: Implement this via an eret/return to user space
     //TODO: Load two processes and run one after the other - ensure they are using different memory
     //TODO: Refactor the above 
+
 
     println!("Exiting jimOS\n");
     exit();

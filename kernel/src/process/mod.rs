@@ -82,8 +82,48 @@ impl<'a> Process<'a>
         return new_process;
     }
 
-    pub fn exec(&mut self) //TODO: Pass in an "image" to execute
+    pub fn exec(&mut self, elf: &elf::Elf) //TODO: Pass in an "image" to execute
     {
+        //TODO: Assert that this process is current
+
+        // println!("Header: {:#?}", elf.header());
+        // println!("Prog Header: {:#?}", elf.program_header());
+
+        // println!("\n\nSECTIONS:\n\n",);
+        for section in elf.sections_iter()
+        {
+            // println!("Section: {:#?}", section);
+            // println!("Offset: {:X}", section.file_offset );
+            // println!("Vaddr:  {:X}", section.addr );
+
+            if section.section_type == 1  && section.addr == DEFAULT_TEXT_BASE {
+                let data = elf.get_section_data(section).unwrap();
+                let dest = section.addr as *mut u8;
+
+                for i in 0..data.len() {
+                    //HACK: Copy executable data in RAM
+                    unsafe {
+                        *dest.offset(i as isize) = data[i];
+                    }
+
+                    // if i % 16 == 0 {
+                    //     let addr = section.file_offset + i;
+
+                    //     print!("\n");
+                    //     print!("{:0>X}: ", addr)
+                    // } 
+                    // else if i % 2 == 0 {
+                    //     print!(" ")
+                    // }
+
+                    // let l = data[i];
+                    // print!("{:0>2X}", l);
+                }
+                
+            }
+            // println!("----------------------------------------");
+        }
+
         //TODO(Later): Reset the HEAP segment (release all physical pages)
         //TODO(Later): Release all of the text segments physical pages
 
@@ -112,6 +152,11 @@ pub fn return_to_userspace()
 {
     //Restore process registers
     //Call eret
+
+    //Now jump to the code we have just copied into memory
+    type EntryPoint = extern fn() -> ();
+    let ep = (&DEFAULT_TEXT_BASE as *const usize) as *const EntryPoint;
+    unsafe {(*ep)()};
 }
 
 pub fn switch_process(next_process: &mut Process) 
