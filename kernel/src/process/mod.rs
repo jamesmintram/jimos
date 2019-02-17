@@ -28,9 +28,6 @@ pub struct Process<'a>
     */
 }
 
-/*
-    
-*/
 
 pub const ONE_MB: usize = 0x100000;
 pub const ONE_GB: usize = 0x40000000;
@@ -72,8 +69,8 @@ impl<'a> Process<'a>
 
         let new_process: Process<'a> = Process{
             heap: head_seg_id,
-            stack: text_seg_id,
-            text: stack_seg_id,
+            stack: stack_seg_id,
+            text: text_seg_id,
 
             address_space: new_as,
             frame: Default::default(),
@@ -86,16 +83,14 @@ impl<'a> Process<'a>
     {
         //TODO: Assert that this process is current
 
-        // println!("Header: {:#?}", elf.header());
-        // println!("Prog Header: {:#?}", elf.program_header());
+        let stack_range = self.address_space.get_segment_range(self.heap);
+        let text_range = self.address_space.get_segment_range(self.text);
 
-        // println!("\n\nSECTIONS:\n\n",);
+        //TODO: Reset the text segment size to the image size
+        //TODO: Pre-fault the whole text segment
+        //TODO: Copy the executable image into the text area
         for section in elf.sections_iter()
         {
-            // println!("Section: {:#?}", section);
-            // println!("Offset: {:X}", section.file_offset );
-            // println!("Vaddr:  {:X}", section.addr );
-
             if section.section_type == 1  && section.addr == DEFAULT_TEXT_BASE {
                 let data = elf.get_section_data(section).unwrap();
                 let dest = section.addr as *mut u8;
@@ -105,40 +100,20 @@ impl<'a> Process<'a>
                     unsafe {
                         *dest.offset(i as isize) = data[i];
                     }
-
-                    // if i % 16 == 0 {
-                    //     let addr = section.file_offset + i;
-
-                    //     print!("\n");
-                    //     print!("{:0>X}: ", addr)
-                    // } 
-                    // else if i % 2 == 0 {
-                    //     print!(" ")
-                    // }
-
-                    // let l = data[i];
-                    // print!("{:0>2X}", l);
                 }
                 
             }
-            // println!("----------------------------------------");
         }
-
+        
         //TODO(Later): Reset the HEAP segment (release all physical pages)
         //TODO(Later): Release all of the text segments physical pages
 
-        //TODO: Reset the text segment size to the image size
-        //TODO: Pre-fault the whole text segment
-        //TODO: Copy the executable image into the text area
 
         // Prepare our frame structure for a later call to return_to_userspace
-        let stack_range = self.address_space.get_segment_range(self.heap);
-        let text_range = self.address_space.get_segment_range(self.text);
-
         let ref mut frame = &mut self.frame;
-        frame.tf_sp = stack_range.start as u64;
-        frame.tf_lr = 0;
-        frame.tf_elr = text_range.start as u64;
+        //frame.tf_sp = stack_range.start as u64;
+        //frame.tf_lr = 0;
+        //frame.tf_elr = text_range.start as u64;
 
         //Spsr
         //esr
@@ -155,6 +130,7 @@ pub fn return_to_userspace()
 
     //Now jump to the code we have just copied into memory
     type EntryPoint = extern fn() -> ();
+    
     let ep = (&DEFAULT_TEXT_BASE as *const usize) as *const EntryPoint;
     unsafe {(*ep)()};
 }
