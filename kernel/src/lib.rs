@@ -8,6 +8,8 @@
 #![feature(alloc_error_handler)] 
 #![feature(allocator_api)]
 
+#![feature(min_const_fn)]
+
 //Temporary
 #![allow(dead_code)]
 
@@ -134,26 +136,15 @@ pub unsafe extern "C" fn kmain()
         let data : *mut usize = addr1 as *mut usize;
 
         //TODO: GET WORKING ON HARDWARE    
-        *data = 1024;
+        //*data = 1024;
     }
 
-    //Dump program (Hacky hex print)
+    // //Dump program (Hacky hex print)
     let phys_addr = 0x3F000000;
     let kva_addr = memory::physical_to_kernel(phys_addr);
     let kva_addr_ptr = kva_addr as *const u8;
     let slice = slice::from_raw_parts(kva_addr_ptr, 1024 * 128);
 
-    println!("Ptr: {:X}\n", kva_addr);
-
-    for i in (0..64).step_by(2) {
-        if i % 16 == 0 {
-            println!("\n");
-        }
-
-        let l = slice[i];
-        let r = slice[i+1];
-        println!("{:0>2X}{:0>2X} ", l, r);
-    }
 
     //Load elf
     let elf = elf::Elf::from_data(&slice).ok().unwrap();
@@ -161,19 +152,57 @@ pub unsafe extern "C" fn kmain()
     println!("Prog Header: {:#?}", elf.program_header());
 
     println!("\n\nSECTIONS:\n\n",);
-
     for section in elf.sections_iter()
     {
         println!("Section: {:#?}", section);
+        println!("Offset: {:X}", section.file_offset );
+        println!("Vaddr:  {:X}", section.addr );
+
+        if section.section_type == 1  && section.addr == process::DEFAULT_TEXT_BASE {
+            let data = elf.get_section_data(section).unwrap();
+            let dest = section.addr as *mut u8;
+
+            for i in 0..data.len() {
+                //HACK: Copy executable data in RAM
+                unsafe {
+                    *dest.offset(i as isize) = data[i];
+                }
+
+                if i % 16 == 0 {
+                    let addr = section.file_offset + i;
+
+                    print!("\n");
+                    print!("{:0>X}: ", addr)
+                } 
+                else if i % 2 == 0 {
+                    print!(" ")
+                }
+
+                let l = data[i];
+                print!("{:0>2X}", l);
+            }
+            
+        }
+        println!("----------------------------------------");
     }
-    // match elf::Elf::from_data(&slice) {
+    //-------------------------------------------------------------
+
+    //Now jump to the code we have just copied into memory
+    type EntryPoint = extern fn() -> ();
+    let ep = (&process::DEFAULT_TEXT_BASE as *const usize) as *const EntryPoint;
+    (*ep)();
+    //TODO: Implement this via an eret/return to user space
+    //TODO: Load two processes and run one after the other - ensure they are using different memory
+    //TODO: Refactor the above 
+
+    println!("Exiting jimOS\n");
+    exit();
+
+        // match elf::Elf::from_data(&slice) {
     //     Err(err) => println!("ELF: {:#?}\n", err),
     //     _ => println!("ELF Loaded\n"),
     // };
     
-
-    println!("Exiting jimOS\n");
-    exit();
     
     // Create a new process
     // Schedule process

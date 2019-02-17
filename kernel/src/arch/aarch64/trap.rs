@@ -83,7 +83,7 @@ fn data_abort(
             virtual_address::VirtualAddress::User(addr) => {
                 println!(
                     "Fault address: {:?}\n",
-                    addr); 
+                    address); 
 
                  println!( "Map on demand\n");
                 
@@ -130,6 +130,7 @@ pub unsafe extern "C" fn do_el1h_sync(
             data_abort(frame, process, far, true);            
         },
         _ => {
+            dump_regs(&*frame_ptr);
             panic!("Unhandled Exception: {:?}", exception);
         }
     }

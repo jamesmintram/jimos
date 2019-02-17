@@ -1,6 +1,7 @@
 #![no_std]
 
 use core::mem;
+use core::slice;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -21,11 +22,11 @@ pub struct ElfProgramHeaderTable
 pub struct ElfSectionHeader 
 {
     name: u32,          //Section name offset
-    section_type: u32,  //Section type
+    pub section_type: u32,  //Section type
     flags: u64,         //Section attributes
-    addr: usize,        //Virtual address in memory
-    file_offset: usize, //Offset in file
-    size: usize,        //Size of section
+    pub addr: usize,        //Virtual address in memory
+    pub file_offset: usize, //Offset in file
+    pub size: usize,        //Size of section
     link: u32,          //Link to other section
     info: u32,          //Misc information
     addalign: u64,      //Address alignment boundary
@@ -159,6 +160,19 @@ impl<'a> Elf<'a>
         let section = unsafe{section_ptr.as_ref().unwrap()};
 
         Some(section)
+    }
+
+    pub fn get_section_data(&self, section: & ElfSectionHeader) -> Option<&[u8]>
+    {
+        //TODO: Validate the section and bounds etc
+
+        let section_ptr = &self.data[section.file_offset] 
+            as *const _ 
+            as *const u8;
+
+        let slice = unsafe { slice::from_raw_parts(section_ptr, section.size) }; 
+
+        return Some(slice)
     }
 
     pub fn sections_iter(&'a self) -> ElfSectionHeaderIter<'a>

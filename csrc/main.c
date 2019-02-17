@@ -14,6 +14,5 @@ void __start() {
 
     //void (*yield)() = (void*)0x808070;
 
-
     //sys_yield();
 }
