@@ -103,24 +103,24 @@ pub fn map_to(
     frame: Frame, 
     flags: EntryFlags)
 {
-    // write!(kwriter::WRITER, "P3 [P4 Index: {:X?}]\n", page.p4_index());
+    //print!("P3 [P4 Index: {:X?}]\n", page.p4_index());
     let p3 = page_table.next_table_create(page.p4_index(), allocator);
 
-    // write!(kwriter::WRITER, "P2 [P3 Index: {}]\n", page.p3_index());
+    //print!("P2 [P3 Index: {}]\n", page.p3_index());
     let p2 = p3.next_table_create(page.p3_index(), allocator);
 
-    // write!(kwriter::WRITER, "P1 [P2 Index: {}]\n", page.p2_index());
+    //print!("P1 [P2 Index: {}]\n", page.p2_index());
     let p1 = p2.next_table_create(page.p2_index(), allocator);
 
     //TODO: Reinstate with proper semantics
     //assert!(p1[page.p1_index()].is_unused());
     
-    // write!(kwriter::WRITER, "VA [P1 Index: {}]\n", page.p1_index());
-    // let new_flags = flags | PRESENT | ACCESS | TABLE_DESCRIPTOR;
-    // let new =  (frame.start_address() as u64) | new_flags.bits();
+    //print!("VA [P1 Index: {}]\n", page.p1_index());
+    let new_flags = flags | PRESENT | ACCESS | TABLE_DESCRIPTOR;
+    let new =  (frame.start_address() as u64) | new_flags.bits();
 
 
-    // write!(kwriter::WRITER, "CURRENT: {:X?}\n", p1[page.p1_index()].test());
-    // write!(kwriter::WRITER, "NEW: {:X?}\n", new);
+    //print!("CURRENT: {:X?}\n", p1[page.p1_index()].test());
+    //print!("NEW: {:X?}\n", new);
     p1[page.p1_index()].set(frame, flags | PRESENT | ACCESS | TABLE_DESCRIPTOR);
 }

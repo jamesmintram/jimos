@@ -91,7 +91,7 @@ impl<'a> Process<'a>
         //TODO: Copy the executable image into the text area
         for section in elf.sections_iter()
         {
-            if section.section_type == 1  && section.addr == DEFAULT_TEXT_BASE {
+            if section.section_type == 1  && section.addr == text_range.start {
                 let data = elf.get_section_data(section).unwrap();
                 let dest = section.addr as *mut u8;
 
@@ -112,9 +112,23 @@ impl<'a> Process<'a>
         // Prepare our frame structure for a later call to return_to_userspace
         let ref mut frame = &mut self.frame;
         //frame.tf_sp = stack_range.start as u64;
-        //frame.tf_lr = 0;
-        //frame.tf_elr = text_range.start as u64;
+        frame.tf_lr = 0;
+        frame.tf_elr = text_range.start as u64;
+        
+        let stack_addr = stack_range.start as *mut u64;
+        unsafe { *stack_addr = 0x4321; }
 
+        let mut spsr : u32 = 0;
+
+        //spsr |= 1 << 2;     // .M[3:2] = 0b100 -->  Return to EL1
+        spsr |= 1 << 6;     // FIQ masked
+        spsr |= 1 << 7;     // IRQ masked
+        spsr |= 1 << 8;     // SError (System Error) masked
+        spsr |= 1 << 9; 
+        
+        frame.tf_spsr = spsr; 
+        
+        println!("Everything set");
         //Spsr
         //esr
         //tf_x -> 0
@@ -127,12 +141,14 @@ pub fn return_to_userspace()
 {
     //Restore process registers
     //Call eret
+    println!("About to return to userspace");
+    arm::exception_return(&get_current_process().frame);
 
     //Now jump to the code we have just copied into memory
-    type EntryPoint = extern fn() -> ();
+    //type EntryPoint = extern fn() -> ();
     
-    let ep = (&DEFAULT_TEXT_BASE as *const usize) as *const EntryPoint;
-    unsafe {(*ep)()};
+    //let ep = (&DEFAULT_TEXT_BASE as *const usize) as *const EntryPoint;
+    //unsafe {(*ep)()};
 }
 
 pub fn switch_process(next_process: &mut Process) 

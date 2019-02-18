@@ -68,6 +68,8 @@ fn data_abort(
 	 */
 	arm::clrex();
 
+    println!("DATA ABORT");
+
     //TODO: Handle the "fault status code" - 
     // https://yurichev.com/mirrors/ARMv8-A_Architecture_Reference_Manual_(Issue_A.a).pdf
     // p. 1528
@@ -82,20 +84,21 @@ fn data_abort(
         match address {
             virtual_address::VirtualAddress::User(addr) => {
                 println!(
-                    "Fault address: {:?}\n",
+                    "Fault address: {:?}",
                     address); 
 
-                 println!( "Map on demand\n");
+                 println!( "Map on demand");
                 
                 if process.address_space.handle_fault(addr) == false {
                     panic!("Unable to satisfy page fault")
                 }
+                arm::flush_tlb();
             },
 
             virtual_address::VirtualAddress::Kernel(_addr) => {
                 println!(
-                    "Kernel Page Fault: 0x{:X}\n", far);    
-                    panic!("Unkown address");    
+                    "Kernel Page Fault: 0x{:X}", far);    
+                panic!("Unkown address");    
             },
         } 
     } else {
@@ -130,7 +133,7 @@ pub unsafe extern "C" fn do_el1h_sync(
             data_abort(frame, process, far, true);            
         },
         _ => {
-            dump_regs(&*frame_ptr);
+            arm::dump_frame(&*frame_ptr);
             panic!("Unhandled Exception: {:?}", exception);
         }
     }
@@ -140,19 +143,34 @@ pub unsafe extern "C" fn do_el1h_sync(
     return -1;
 }
 
-fn dump_regs(frame: &frame::TrapFrame)
-{
-    // borrow of packed field is unsafe and requires unsafe function or block
-    unsafe {
-        println!("SP: {:X}  {}\n", frame.tf_sp, frame.tf_sp);
-        println!("LR: {:X}  {}\n", frame.tf_lr, frame.tf_lr);
-        println!("ELR: {:X}  {}\n", frame.tf_elr, frame.tf_elr);
-        println!("SPSR: {:X}  {}\n", frame.tf_spsr, frame.tf_spsr);
-        println!("ESR: {:X}  {}\n", frame.tf_esr, frame.tf_esr);
 
-        for i in 0..30  {
-            println!("X{}: {:X}\n", i, frame.tf_x[i]);
+
+#[no_mangle]
+#[allow(dead_code)]
+pub unsafe extern "C" fn do_el0_sync(
+    frame_ptr: *const frame::TrapFrame) -> i32
+{
+    let frame = &*frame_ptr;
+    let exception = exception_from_esr(frame.tf_esr);
+    let process = process::get_current_process();
+
+    match exception {
+        //TODO: Match on all data aborts
+        Exception::DATA_ABORT => {
+            let far = arm::read_far_el1();
+            data_abort(frame, process, far, false);            
+        },
+        Exception::DATA_ABORT_L => {
+            let far = arm::read_far_el1();
+            data_abort(frame, process, far, true);            
+        },
+        _ => {
+            arm::dump_frame(&*frame_ptr);
+            panic!("Unhandled Exception: {:?}", exception);
         }
     }
-}
 
+    //TODO: Fix up the register clobbering memory/mod.rs
+    //panic!("Unhandled exception")
+    return -1;
+}

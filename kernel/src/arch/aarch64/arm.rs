@@ -1,3 +1,5 @@
+use super::frame::TrapFrame;
+
 pub fn read_far_el1() -> u64
 {
     let val: u64;
@@ -30,6 +32,59 @@ pub fn get_thread_ptr()  -> usize
     };
 
     ptr_value
+}
+
+pub fn exception_return(frame: &TrapFrame)
+{
+    /*
+	 * Ensure compiler barrier, otherwise the monitor clear might
+	 * occur too late for us ?
+	 */
+     let frame_ptr = frame as *const TrapFrame;
+    unsafe { asm!("
+            mov x0, $0
+            b _enter_userspace
+        "
+        :
+        : "r"(frame)
+        :
+        ); 
+    };
+    dump_regs();
+}
+
+fn dump_regs()
+{
+    // let mut frame : TrapFrame;
+    // let mut frame_ptr = &mut frame as *mut TrapFrame;
+
+    // unsafe { asm!("
+    //         mov x0, $0
+    //         b _enter_userspace
+    //     "
+    //     :
+    //     : "r"(frame_ptr)
+    //     :
+    //     ); 
+    // };
+    // dump_frame(&frame);
+}
+
+
+pub fn dump_frame(frame: &TrapFrame)
+{
+    // borrow of packed field is unsafe and requires unsafe function or block
+    unsafe {
+        println!("SP: {:X}  {}\n", frame.tf_sp, frame.tf_sp);
+        println!("LR: {:X}  {}\n", frame.tf_lr, frame.tf_lr);
+        println!("ELR: {:X}  {}\n", frame.tf_elr, frame.tf_elr);
+        println!("SPSR: {:X}  {}\n", frame.tf_spsr, frame.tf_spsr);
+        println!("ESR: {:X}  {}\n", frame.tf_esr, frame.tf_esr);
+
+        for i in 0..30  {
+            println!("X{}: {:X}\n", i, frame.tf_x[i]);
+        }
+    }
 }
 
 pub fn clrex()

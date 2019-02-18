@@ -47,7 +47,10 @@
 	ldp	x18,  x30, [sp, #(TF_SP)] //Assembler did not like lr so x30
 	ldp	x10, x11, [sp, #(TF_ELR)]
 .if \el == 0
-	msr	sp_el0, x18
+	mov x18, 0x40000000
+  orr x18, x18, 0x10
+  msr	sp_el0, x18
+
 .endif
 	msr	spsr_el1, x11
 	msr	elr_el1, x10
@@ -83,6 +86,14 @@
 .endm
 
 
+  .global _enter_userspace
+_enter_userspace:
+  MSR SPSel, #1
+  mov sp, x0
+
+  restore_registers 0
+  //MSR SPSel, #0
+  eret
 
 ENTRY(handle_el1h_sync)
   // HACK for making SP work (For now TODO: Fix)
@@ -96,6 +107,19 @@ ENTRY(handle_el1h_sync)
   //b exit
 	eret
 END(handle_el1h_sync)
+
+ENTRY(handle_el0_sync)
+  // HACK for making SP work (For now TODO: Fix)
+  // MSR SPSel, #0
+	
+  save_registers 0
+	//ldr	x0, [x18, #PC_CURTHREAD]
+	mov	x0, sp
+	bl	do_el0_sync
+	restore_registers 0
+  //b exit
+	eret
+END(handle_el0_sync)
 
 .macro vempty
   .align 7
@@ -132,7 +156,7 @@ _vectors:
   vempty  //FIQ EL1h
   vempty  //Error EL1h
 
-  vempty  //Synchronous 64bit EL0
+  vector el0_sync  //Synchronous 64bit EL0
   vempty  //IRQ 64bit EL0
   vempty  //FIQ 64bit EL0
   vempty  //Error 64bit EL0
