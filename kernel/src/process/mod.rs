@@ -81,14 +81,17 @@ impl<'a> Process<'a>
 
     pub fn exec(&mut self, elf: &elf::Elf) //TODO: Pass in an "image" to execute
     {
+        println!("Exec process");
         //TODO: Assert that this process is current
 
-        let stack_range = self.address_space.get_segment_range(self.heap);
+        let stack_range = self.address_space.get_segment_range(self.stack);
         let text_range = self.address_space.get_segment_range(self.text);
 
         //TODO: Reset the text segment size to the image size
         //TODO: Pre-fault the whole text segment
         //TODO: Copy the executable image into the text area
+        
+
         for section in elf.sections_iter()
         {
             if section.section_type == 1  && section.addr == text_range.start {
@@ -100,18 +103,19 @@ impl<'a> Process<'a>
                     unsafe {
                         *dest.offset(i as isize) = data[i];
                     }
+                    
                 }
-                
             }
         }
-        
+    
+
         //TODO(Later): Reset the HEAP segment (release all physical pages)
         //TODO(Later): Release all of the text segments physical pages
 
 
         // Prepare our frame structure for a later call to return_to_userspace
         let ref mut frame = &mut self.frame;
-        //frame.tf_sp = stack_range.start as u64;
+        frame.tf_sp = stack_range.start as u64;
         frame.tf_lr = 0;
         frame.tf_elr = text_range.start as u64;
         
@@ -142,17 +146,19 @@ pub fn return_to_userspace()
     //Restore process registers
     //Call eret
     println!("About to return to userspace");
-    arm::exception_return(&get_current_process().frame);
+    //arm::exception_return(&get_current_process().frame);
 
     //Now jump to the code we have just copied into memory
-    //type EntryPoint = extern fn() -> ();
+    type EntryPoint = extern fn() -> ();
     
-    //let ep = (&DEFAULT_TEXT_BASE as *const usize) as *const EntryPoint;
-    //unsafe {(*ep)()};
+    let ep = (&DEFAULT_TEXT_BASE as *const usize) as *const EntryPoint;
+    unsafe {(*ep)()};
+    //)()};
 }
 
 pub fn switch_process(next_process: &mut Process) 
 {
+    println!("Switching process");
     //Set the thread pointer to this
     let process_ptr = (next_process as *const _) as usize;
     arm::set_thread_ptr(process_ptr);
