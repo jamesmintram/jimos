@@ -29,7 +29,7 @@ pub struct Process<'a>
 }
 
 
-pub const ONE_MB: usize = 0x100000;
+pub const ONE_MB: usize = 0x10000;
 pub const ONE_GB: usize = 0x40000000;
 
 pub const DEFAULT_TEXT_BASE: usize = ONE_MB; 
@@ -115,12 +115,12 @@ impl<'a> Process<'a>
 
         // Prepare our frame structure for a later call to return_to_userspace
         let ref mut frame = &mut self.frame;
-        frame.tf_sp = stack_range.start as u64;
-        frame.tf_lr = 0;
+        frame.tf_sp = stack_range.end as u64;
+        frame.tf_lr = 0x0;
         frame.tf_elr = text_range.start as u64;
-        
-        let stack_addr = stack_range.start as *mut u64;
-        unsafe { *stack_addr = 0x4321; }
+
+        // let stack_addr = stack_range.start as *mut u64;
+        // unsafe { *stack_addr = 0x4321; }
 
         let mut spsr : u32 = 0;
 
@@ -146,14 +146,12 @@ pub fn return_to_userspace()
     //Restore process registers
     //Call eret
     println!("About to return to userspace");
-    //arm::exception_return(&get_current_process().frame);
+    arm::exception_return(&get_current_process().frame);
 
     //Now jump to the code we have just copied into memory
-    type EntryPoint = extern fn() -> ();
-    
-    let ep = (&DEFAULT_TEXT_BASE as *const usize) as *const EntryPoint;
-    unsafe {(*ep)()};
-    //)()};
+    //type EntryPoint = extern fn() -> ();
+    //let ep = (&DEFAULT_TEXT_BASE as *const usize) as *const EntryPoint;
+    //unsafe {(*ep)()};
 }
 
 pub fn switch_process(next_process: &mut Process) 

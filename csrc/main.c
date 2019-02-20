@@ -2,7 +2,7 @@
 
 void __start() {
     // Test out the mapping
-    int *ptr = (int*)0x40000000;
+    int *ptr = (int*)0x400000FF;
     //let data : *mut usize = addr1 as *mut usize;
 
     //TODO: GET WORKING ON HARDWARE    
