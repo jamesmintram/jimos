@@ -6,6 +6,20 @@ use process;
 
 #[allow(non_camel_case_types)]
 
+// ESR - Instruction Fault Status Code
+// -----------------------------------
+// 0b000000 Address size fault in TTBR0 or TTBR1.
+// 0b000101 Translation fault, 1st level.
+// 00b00110 Translation fault, 2nd level.
+// 00b00111 Translation fault, 3rd level.
+// 0b001001 Access flag fault, 1st level.
+// 0b001010 Access flag fault, 2nd level.
+// 0b001011 Access flag fault, 3rd level.
+// 0b001101 Permission fault, 1st level.
+// 0b001110 Permission fault, 2nd level.
+// 0b001111 Permission fault, 3rd level.
+// .. and more here: http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0488c/CIHIDFFE.html
+
 #[derive(Copy, Clone ,Debug, PartialEq)]
 pub enum Exception {
     UNKNOWN = 0x00,     /* Unkwn exception */
@@ -87,8 +101,6 @@ fn data_abort(
                     "Fault address: {:?}",
                     address); 
 
-                 println!( "Map on demand");
-                
                 if process.address_space.handle_fault(addr) == false {
                     panic!("Unable to satisfy page fault")
                 }

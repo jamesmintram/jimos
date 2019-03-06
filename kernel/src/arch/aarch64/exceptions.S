@@ -139,7 +139,7 @@
 
   .global _enter_userspace
 _enter_userspace:
-  MSR SPSel, #1
+
   restore_frame 0
   //MSR SPSel, #0
   //mov x10, 0xB00B

@@ -1,4 +1,3 @@
-#![feature(panic_implementation)]
 #![feature(compiler_builtins_lib, lang_items, asm)]
 #![no_builtins]
 #![no_std]
@@ -7,8 +6,6 @@
 
 #![feature(alloc_error_handler)] 
 #![feature(allocator_api)]
-
-#![feature(min_const_fn)]
 
 //Temporary
 #![allow(dead_code)]

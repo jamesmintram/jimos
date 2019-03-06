@@ -142,9 +142,9 @@ impl<'a> AddressSpace<'a>
             allocator,
             page_table, 
             page, 
-            frame, 
-            paging::EntryFlags::empty());
-
+            frame,
+            paging::entry::RW);
+ 
         return true;
     }
     //TODO: remove_segment()
