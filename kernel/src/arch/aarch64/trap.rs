@@ -19,6 +19,69 @@ use process;
 // 0b001110 Permission fault, 2nd level.
 // 0b001111 Permission fault, 3rd level.
 // .. and more here: http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0488c/CIHIDFFE.html
+#[derive(Copy, Clone ,Debug, PartialEq)]
+pub enum FaultStatusCode {
+    ADDR_SIZE_FAULT,
+    TRANS_FAULT,
+    ACCESS_FAULT,
+    PERM_FAULT,
+
+    UNKNOWN,
+}
+
+fn fault_status_code_from_u32(code: u32) -> FaultStatusCode {
+    match code {
+        0x0 => FaultStatusCode::ADDR_SIZE_FAULT,
+        0x1 => FaultStatusCode::TRANS_FAULT,
+        0x2 => FaultStatusCode::ACCESS_FAULT,
+        0x3 => FaultStatusCode::PERM_FAULT,
+
+        _ => FaultStatusCode::UNKNOWN,
+    }
+}
+
+#[derive(Copy, Clone ,Debug, PartialEq)]
+pub enum FaultStage {
+    STAGE_1,
+    STAGE_2,
+    STAGE_3,
+
+    UNKNOWN,
+}
+
+fn fault_stage_from_u32(stage: u32) -> FaultStage {
+    match stage {
+        0x1 => FaultStage::STAGE_1,
+        0x2 => FaultStage::STAGE_2,
+        0x3 => FaultStage::STAGE_3,
+        _ => FaultStage::UNKNOWN,
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct FaultInfo { 
+    code: FaultStatusCode,
+    stage: FaultStage,
+}
+
+fn fault_status_from_esr(esr: u32) -> FaultInfo {
+    const ESR_STAGE_SHIFT: u32 = 0x0;
+    const ESR_STAGE_MASK: u32 = 0b11;
+
+    const ESR_CODE_SHIFT: u32 = 0x2;
+    const ESR_CODE_MASK: u32 = 0b11;
+
+    let stage = (esr >> ESR_STAGE_SHIFT) & ESR_STAGE_MASK;
+    let code = (esr >> ESR_CODE_SHIFT) & ESR_CODE_MASK;
+
+    FaultInfo{
+        code: fault_status_code_from_u32(code),
+        stage: fault_stage_from_u32(stage),
+    }
+    //Convert this into an enum?    
+}
+
+
 
 #[derive(Copy, Clone ,Debug, PartialEq)]
 pub enum Exception {
@@ -70,7 +133,7 @@ fn exception_from_esr(esr: u32) -> Exception {
 }
 
 fn data_abort(
-    _frame: &frame::TrapFrame, 
+    frame: &frame::TrapFrame, 
     process: &mut process::Process, 
     far: u64, 
     _low: bool)
@@ -82,7 +145,13 @@ fn data_abort(
 	 */
 	arm::clrex();
 
-    println!("DATA ABORT");
+    let status = fault_status_from_esr(frame.tf_esr);
+
+    if status.code == FaultStatusCode::PERM_FAULT
+        || status.code == FaultStatusCode::ACCESS_FAULT 
+    {
+        panic!("ACCESS_FAULT");
+    }
 
     //TODO: Handle the "fault status code" - 
     // https://yurichev.com/mirrors/ARMv8-A_Architecture_Reference_Manual_(Issue_A.a).pdf
