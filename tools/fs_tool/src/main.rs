@@ -146,7 +146,53 @@ fn main() -> io::Result<()>  {
    
         // TODO: Make this less picky?
         let file_name = str::from_utf8(&file_entry.name).unwrap();
-        println!("FileName: {}", file_name);    
+        println!("FileName: {}", file_name); 
+
+        // Figure out the byte address of the first cluster
+        let mut file_cluster_byte = 
+            file_entry.low_16 * 2 + 
+            first_fat_sector * header.bytes_per_sector;
+
+        // Now lets follow the chain!
+        while true {
+            println!("First cluster byte: {:X}", file_cluster_byte);
+            
+            
+            let next_cluster = &data[file_cluster_byte as usize] as *const u8;
+            let next_cluster_ptr = next_cluster as *const u16;
+            let next_cluster_idx = unsafe{*next_cluster_ptr};
+
+            if next_cluster_idx == 0xFFF8 {
+                println!("Unused block - if first in file, then empty file");
+                break;
+            }
+
+            //TODO: Read the data from the disk here
+
+            println!("Next cluster IDX: {:X}", next_cluster_idx);
+            if next_cluster_idx == 0xFFFF {
+                break;
+            }
+
+            file_cluster_byte = next_cluster_idx * 2 +
+                first_fat_sector * header.bytes_per_sector;
+        }
+
+        //TODO: Display whether entry is a file or directory
+        //TODO: Display file contents
+        //TODO: Display sub-folder contents
+
+        //-----------------------------------------------------------------
+        //TODO: Form a little FAT16 browser shell thing with
+        //-----------------------------------------------------------------
+        //          cd      .. or foldername    change current directory
+        //          cat     filename            display file contents
+        //          ls                          list current folder
+        //-----------------------------------------------------------------
+
+        
+
+        //let file_file_cluster_byte = file_first_cluster * header.byte
     }
 
     Ok(())
