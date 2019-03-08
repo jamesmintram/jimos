@@ -1,9 +1,34 @@
 use std::io;
+use std::str;
 use std::fs::File;
 use memmap::MmapOptions;
 
 use core::mem;
 use core::slice;
+
+#[repr(packed)]
+#[derive(Debug)]
+pub struct FatFileEntry
+{
+    name: [u8;11],
+    attribute: u8,
+    reserved: u8,
+    
+    creation_time_10ths: u8,
+    creation_time_hms: u16,
+    creation_date: u16,
+
+    last_access: u16,
+    
+    high_16: u16,
+
+    last_mod_time: u16,
+    last_mod_date: u16,
+
+    low_16: u16,
+
+    file_size: u32,
+}
 
 #[repr(packed)]
 #[derive(Debug)]
@@ -86,7 +111,43 @@ fn main() -> io::Result<()>  {
     println!("Address of DIR {:X}", first_dir_sector * header.bytes_per_sector);
     println!("Address of DAT {:X}", first_data_sector * header.bytes_per_sector);
 
-    //println!("Size of header: {}", );
+    //Lets read the root directory and print out info
+    //-----------------------------------------------
+    
+    for entry_idx in 0..(header.num_dir_entries as usize) {
+        let first_dir_byte = (first_dir_sector * header.bytes_per_sector) as usize;
+        let entry_byte = first_dir_byte + entry_idx * 32;
+        
+        let first_byte = data[entry_byte];
+
+        // Unused dir entry
+        if first_byte == 0xE5 {
+            continue;
+        }
+
+        // End of Directory
+        if first_byte == 0x00 {
+            break;
+        }
+        
+        let file_entry_ptr = &data[entry_byte] 
+                as *const _ 
+                as *const FatFileEntry;
+
+        let file_entry = unsafe{file_entry_ptr.as_ref().unwrap()};
+
+        // Ignore long file names (for now)
+        if (file_entry.attribute & 0xF) == 0xF {
+            continue;
+        }
+
+        println!("File Entry address: {:X}", entry_byte);
+        println!("File Entry: {:?}", file_entry);
+   
+        // TODO: Make this less picky?
+        let file_name = str::from_utf8(&file_entry.name).unwrap();
+        println!("FileName: {}", file_name);    
+    }
 
     Ok(())
 }
