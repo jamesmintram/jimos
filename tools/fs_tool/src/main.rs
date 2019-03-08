@@ -6,6 +6,21 @@ use memmap::MmapOptions;
 use core::mem;
 use core::slice;
 
+pub mod FatDirEntryType {
+    pub const END: u8 = 0x00;
+    pub const UNUSED: u8    = 0xE5;
+}
+
+pub mod FatFileAttributes {
+    pub const READ_ONLY: u8 = 0x01;
+    pub const HIDDEN: u8    = 0x02;
+    pub const SYSTEM: u8    = 0x04;
+    pub const VOLUME_ID: u8 = 0x08;
+    pub const DIRECTORY: u8 = 0x10;
+    pub const ARCHIVE: u8   = 0x20;
+    pub const LONG_FILE_NAME: u8       = 0x0F;
+}
+
 #[repr(packed)]
 #[derive(Debug)]
 pub struct FatFileEntry
@@ -29,6 +44,7 @@ pub struct FatFileEntry
 
     file_size: u32,
 }
+
 
 #[repr(packed)]
 #[derive(Debug)]
@@ -61,6 +77,7 @@ pub struct FatComputed
     total_data_sectors: u16,
     total_clusters: u16,
 }
+
 
 fn main() -> io::Result<()>  {
     
@@ -121,12 +138,12 @@ fn main() -> io::Result<()>  {
         let first_byte = data[entry_byte];
 
         // Unused dir entry
-        if first_byte == 0xE5 {
+        if first_byte == FatDirEntryType::UNUSED {
             continue;
         }
 
         // End of Directory
-        if first_byte == 0x00 {
+        if first_byte == FatDirEntryType::END {
             break;
         }
         
@@ -137,45 +154,63 @@ fn main() -> io::Result<()>  {
         let file_entry = unsafe{file_entry_ptr.as_ref().unwrap()};
 
         // Ignore long file names (for now)
-        if (file_entry.attribute & 0xF) == 0xF {
+        if (file_entry.attribute & 0xF) == FatFileAttributes::LONG_FILE_NAME {
             continue;
         }
 
-        println!("File Entry address: {:X}", entry_byte);
-        println!("File Entry: {:?}", file_entry);
+        // println!("File Entry address: {:X}", entry_byte);
+        // println!("File Entry: {:?}", file_entry);
    
         // TODO: Make this less picky?
         let file_name = str::from_utf8(&file_entry.name).unwrap();
-        println!("FileName: {}", file_name); 
 
-        // Figure out the byte address of the first cluster
-        let mut file_cluster_byte = 
-            file_entry.low_16 * 2 + 
-            first_fat_sector * header.bytes_per_sector;
+        if file_entry.attribute & FatFileAttributes::DIRECTORY != 0 
+        {
+            println!("FolderName: {}", file_name); 
+        }
+        else
+        {
+            println!("FileName: {}", file_name); 
+        }
 
         // Now lets follow the chain!
-        while true {
-            println!("First cluster byte: {:X}", file_cluster_byte);
-            
-            
-            let next_cluster = &data[file_cluster_byte as usize] as *const u8;
-            let next_cluster_ptr = next_cluster as *const u16;
-            let next_cluster_idx = unsafe{*next_cluster_ptr};
+        let mut current_cluster_idx = file_entry.low_16;
+        
+        //1A800 - for the start of the CHEESE dir entry
 
-            if next_cluster_idx == 0xFFF8 {
-                println!("Unused block - if first in file, then empty file");
-                break;
-            }
+        while true {      
+            println!("Cluster index: {:X}", current_cluster_idx);
+
+
+            let file_cluster_byte = 
+                current_cluster_idx * 2 + 
+                first_fat_sector * header.bytes_per_sector;
+
+            println!("First cluster byte: {:X}", file_cluster_byte);
+
 
             //TODO: Read the data from the disk here
+            let data_start = (first_data_sector as u32 + current_cluster_idx as u32 * header.sectors_per_cluster as u32)  * header.bytes_per_sector as u32;
+            println!("Data Address: {:X}", data_start - 0x1000);
 
-            println!("Next cluster IDX: {:X}", next_cluster_idx);
-            if next_cluster_idx == 0xFFFF {
+            //TODO: Fix up the - 0x1000 fudge
+
+            let next_cluster = &data[file_cluster_byte as usize] as *const u8;
+            let next_cluster_ptr = next_cluster as *const u16;
+            current_cluster_idx = unsafe{*next_cluster_ptr};
+
+            if current_cluster_idx == 0xFFF8 {
+                //println!("Unused block - if first in file, then empty file");
                 break;
             }
 
-            file_cluster_byte = next_cluster_idx * 2 +
-                first_fat_sector * header.bytes_per_sector;
+            //println!("Next cluster IDX: {:X}", current_cluster_idx);
+            if current_cluster_idx == 0xFFFF {
+                break;
+            }
+
+            // file_cluster_byte = current_cluster_idx * 2 +
+            //     first_fat_sector * header.bytes_per_sector;
         }
 
         //TODO: Display whether entry is a file or directory

@@ -19,6 +19,8 @@ use process;
 // 0b001110 Permission fault, 2nd level.
 // 0b001111 Permission fault, 3rd level.
 // .. and more here: http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0488c/CIHIDFFE.html
+//-------------------------------------
+
 #[derive(Copy, Clone ,Debug, PartialEq)]
 pub enum FaultStatusCode {
     ADDR_SIZE_FAULT,
@@ -64,7 +66,7 @@ pub struct FaultInfo {
     stage: FaultStage,
 }
 
-fn fault_status_from_esr(esr: u32) -> FaultInfo {
+fn fault_info_from_esr(esr: u32) -> FaultInfo {
     const ESR_STAGE_SHIFT: u32 = 0x0;
     const ESR_STAGE_MASK: u32 = 0b11;
 
@@ -77,8 +79,7 @@ fn fault_status_from_esr(esr: u32) -> FaultInfo {
     FaultInfo{
         code: fault_status_code_from_u32(code),
         stage: fault_stage_from_u32(stage),
-    }
-    //Convert this into an enum?    
+    }   
 }
 
 
@@ -136,7 +137,7 @@ fn data_abort(
     frame: &frame::TrapFrame, 
     process: &mut process::Process, 
     far: u64, 
-    _low: bool)
+    low: bool)
 {
     /*
 	 * According to the ARMv8-A rev. A.g, B2.10.5 "Load-Exclusive
@@ -145,24 +146,18 @@ fn data_abort(
 	 */
 	arm::clrex();
 
-    let status = fault_status_from_esr(frame.tf_esr);
+    let status = fault_info_from_esr(frame.tf_esr);
 
+    //TODO: Temporary, this will need changing when there are legitimate
+    //      reasons - ie COW
     if status.code == FaultStatusCode::PERM_FAULT
         || status.code == FaultStatusCode::ACCESS_FAULT 
     {
         panic!("ACCESS_FAULT");
     }
 
-    //TODO: Handle the "fault status code" - 
-    // https://yurichev.com/mirrors/ARMv8-A_Architecture_Reference_Manual_(Issue_A.a).pdf
-    // p. 1528
-
-    //dump_regs(&_frame);
-
     let fault_address = virtual_address::from_u64(far);
 
-    //TODO: Call memory::page::PageFault(darta);
-    //TODO: Check for permission issue if page fault
     if let Some(address) = fault_address {
         match address {
             virtual_address::VirtualAddress::User(addr) => {
@@ -171,7 +166,23 @@ fn data_abort(
                     address); 
 
                 if process.address_space.handle_fault(addr) == false {
-                    panic!("Unable to satisfy page fault")
+                    if low 
+                    {
+                        panic!("Process SEGFAULT");
+                        //TODO: Handle a process segfault
+                        //
+                        //  Set the process status to DEAD
+                        //  Return
+                        //
+                        //  During the "pre-return" check for another process
+                        //  to schedule in
+                        //
+                    }
+                    else
+                    {
+                        panic!("Unable to satisfy kernel page fault");
+                    }
+                    
                 }
                 arm::flush_tlb();
             },
@@ -201,8 +212,6 @@ pub unsafe extern "C" fn do_el1h_sync(
     let exception = exception_from_esr(frame.tf_esr);
     let process = process::get_current_process();
 
-
-
     match exception {
         //TODO: Match on all data aborts
         Exception::DATA_ABORT => {
@@ -218,6 +227,8 @@ pub unsafe extern "C" fn do_el1h_sync(
             panic!("Unhandled Exception: {:?}", exception);
         }
     }
+
+    //TODO: Run scheduler check (we could get swapped out here)
 
     //TODO: Fix up the register clobbering memory/mod.rs
     //panic!("Unhandled exception")
@@ -242,6 +253,10 @@ pub unsafe extern "C" fn do_el0_sync(
             data_abort(frame, process, far, false);            
         },
         Exception::DATA_ABORT_L => {
+            let far = arm::read_far_el1();
+            data_abort(frame, process, far, true);            
+        },
+        Exception::INSN_ABORT_L => {
             let far = arm::read_far_el1();
             data_abort(frame, process, far, true);            
         },
