@@ -11,8 +11,8 @@ use memory;
 
 use arch::aarch64::arm;
 
-use self::paging::PhysicalAddress;
-use self::paging::VirtualAddress;
+pub use self::paging::PhysicalAddress;
+pub use self::paging::VirtualAddress;
 
 use self::paging::table::{Table, Level4};
 use self::paging::Page;

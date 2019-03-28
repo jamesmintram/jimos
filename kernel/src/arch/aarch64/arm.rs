@@ -34,6 +34,25 @@ pub fn get_thread_ptr()  -> usize
     ptr_value
 }
 
+pub fn resume_process(frame: &TrapFrame)
+{
+    /*
+	 * Ensure compiler barrier, otherwise the monitor clear might
+	 * occur too late for us ?
+	 */
+     let frame_ptr = frame as *const TrapFrame;
+    unsafe { asm!("
+            mov x0, $0
+            b _resume_process
+        "
+        :
+        : "r"(frame)
+        :
+        ); 
+    };
+}
+
+
 pub fn exception_return(frame: &TrapFrame)
 {
     /*
@@ -86,6 +105,7 @@ pub fn dump_frame(frame: &TrapFrame)
         }
     }
 }
+
 
 pub fn clrex()
 {

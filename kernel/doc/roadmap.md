@@ -1,3 +1,14 @@
+- Process scheduling
+- Improved debug
+- Init bring up
+- Thread local, Futexes (What does Rustc generate for [#thread_local])
+- Stack unwinding
+- IRQs
+- Time management
+- Framebuffer support
+- Dynamic linking + loading
+- Drivers from freebsd
+
 Build and run a user process which prints to the screen via syscall
 - Configure build to produce callable process within its own VA space
 - Data aborts + JIT memory mapping for lower EL

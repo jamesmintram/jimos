@@ -97,7 +97,6 @@
 	ldr	x10, [x0, #(TF_ELR)]
   msr	elr_el1, x10
 	
-
   mov x11, xzr
   mov x12, xzr
 	ldp	w11, w12, [x0, #(TF_SPSR)]
@@ -105,13 +104,11 @@
 	msr	spsr_el1, x11
 	msr	esr_el1, x12
 
-
 	ldp	x28, x29, [x0, #(TF_X + 28 * 8)]
 	ldp	x26, x27, [x0, #(TF_X + 26 * 8)]
 	ldp	x24, x25, [x0, #(TF_X + 24 * 8)]
 	ldp	x22, x23, [x0, #(TF_X + 22 * 8)]
 	ldp	x20, x21, [x0, #(TF_X + 20 * 8)]
-	ldp	x18, x19, [x0, #(TF_X + 18 * 8)]
 	ldp	x16, x17, [x0, #(TF_X + 16 * 8)]
 	ldp	x14, x15, [x0, #(TF_X + 14 * 8)]
 	ldp	x12, x13, [x0, #(TF_X + 12 * 8)]
@@ -126,25 +123,49 @@
 .if \el == 0
   msr sp_el0, x18
 .else
-  mov sp, x18
+  msr sp_el0, x18
+//  mov sp, x18
 .endif
 	
-  
-
+  ldp	x18, x19, [x0, #(TF_X + 18 * 8)]
   ldp	x0,  x1,  [x0, #(TF_X + 0  * 8)]
  
 .endm
 
 
+  .global _resume_process
+_resume_process:
+  restore_frame 1  
+  //mov x18, 0xFFFF
+  //msr sp_el0, x18
+  eret
 
+
+//TODO: This is currently written for the first time
+//      a process enters EL0
   .global _enter_userspace
 _enter_userspace:
 
-  restore_frame 0
   //MSR SPSel, #0
   //mov x10, 0xB00B
   //msr elr_el1, x10
+  
+  //Enter EL0
+  //---------
+
+  //ensure elr will be "restored" to the entered_0
+  //adr x10, entered_0
+  //str	x10, [x0, #(TF_ELR)]
+  
+  restore_frame 0
+  
   eret
+
+entered_0:
+
+
+  //If we ever reach here, then a process has terminated
+  //therefore we need to make a syscall
   b exit
 
 ENTRY(handle_el1h_sync)

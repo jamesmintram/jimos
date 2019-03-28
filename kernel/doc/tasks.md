@@ -1,5 +1,4 @@
 Cleanup
-    Fix-up write! to work as println! instead
     Remove all of the Result warnings for printing
 
 Process

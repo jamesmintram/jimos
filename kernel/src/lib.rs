@@ -34,6 +34,8 @@ mod uart;
 mod gpio;
 mod mailbox;
 mod panic;
+mod rootprocess;
+mod scheduler;
 
 use core::slice;
 
@@ -116,28 +118,13 @@ pub unsafe extern "C" fn kmain()
     //     "Pushed some vec\n");
     //----------------------
 
-    // //Dump program (Hacky hex print)
-    let phys_addr = 0x3F000000;
-    let kva_addr = memory::physical_to_kernel(phys_addr);
-    let kva_addr_ptr = kva_addr as *const u8;
-    let slice = slice::from_raw_parts(kva_addr_ptr, 1024 * 128);
+    let mut root_process = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
+    rootprocess::boot_root_process(root_process);
 
-    //Load elf
-    let elf = elf::Elf::from_data(&slice).ok().unwrap();
+    //process1.exec(&elf);    
 
-    let mut process1 = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
-    {
-        process::switch_process(&mut process1);
-        process1.exec(&elf);
-        process::return_to_userspace();
-    }
-
-    let mut process2 = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
-    {
-        process::switch_process(&mut process2);
-        process2.exec(&elf);
-        process::return_to_userspace();
-    }
+    //Start process 2
+    //process::return_to_userspace();
 
     //TODO: Implement this via an eret/return to user space
     //TODO: Load two processes and run one after the other - ensure they are using different memory

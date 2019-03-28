@@ -260,11 +260,16 @@ pub unsafe extern "C" fn do_el0_sync(
             let far = arm::read_far_el1();
             data_abort(frame, process, far, true);            
         },
+        Exception::SVC64 => {
+            panic!("Handle a service call here");
+        },
         _ => {
             arm::dump_frame(&*frame_ptr);
             panic!("Unhandled Exception: {:?}", exception);
         }
     }
+
+    //TODO: Run scheduler check (we could get swapped out here)
 
     //TODO: Fix up the register clobbering memory/mod.rs
     //panic!("Unhandled exception")
