@@ -1,4 +1,5 @@
-TARGET ?= aarch64-none-elf
+TARGET ?= aarch64-linux-gnu
+# aarch64-none-elf
 CROSS ?= $(TARGET)
 
 DEBUG := 0

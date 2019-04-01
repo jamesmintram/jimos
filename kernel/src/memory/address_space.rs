@@ -13,8 +13,6 @@ struct AddressSegment
 
 pub struct AddressSpace<'a>
 {
-    allocator: &'a LockedAreaFrameAllocator,
-
     //List of AddressSpaceEntries
     segments: Vec<AddressSegment>,
     pub page_table: &'a mut table::Table<table::Level4>,
@@ -66,12 +64,11 @@ pub struct AddressSegmentId(usize);
 impl<'a> AddressSpace<'a> 
 {
 
-    pub fn new(allocator: &LockedAreaFrameAllocator) -> AddressSpace
+    pub fn new() -> AddressSpace<'a>
     {
         return AddressSpace{
-            allocator: allocator,
             segments: Vec::new(),
-            page_table: memory::paging::table::new(allocator),
+            page_table: memory::paging::table::new(),
         };
     }
 
@@ -96,7 +93,7 @@ impl<'a> AddressSpace<'a>
         let segment_id = AddressSegmentId((self.segments.len() -1) as usize);
         //let new_segment = self.get_segment(segment_id);
         let new_segment = &self.segments[segment_id.0];
-        map_segment(self.allocator, new_segment, self.page_table);
+        map_segment(new_segment, self.page_table);
 
         return segment_id; 
     }
@@ -130,16 +127,14 @@ impl<'a> AddressSpace<'a>
             return false;
         }
 
-        let allocator = &self.allocator;
         let page_table = &mut self.page_table;
 
         //TODO: This should come from the ANON HEAP instead of the KERNEL HEAP
         //      but that config should come in through the Segment Mapper desc
-        let frame = memory::kalloc::alloc_frame(allocator);
+        let frame = memory::kalloc::alloc_frame();
         let page = paging::Page::containing_address(fault_address);
 
         memory::paging::map_to(
-            allocator,
             page_table, 
             page, 
             frame,
@@ -157,7 +152,6 @@ impl<'a> AddressSpace<'a>
 //TODO: This should be moved into a mapper
 //------------------------------------------------------------------------
 fn map_segment(
-    allocator: &LockedAreaFrameAllocator, 
     segment: &AddressSegment, 
     page_table: &mut table::Table<table::Level4>)
 {
@@ -167,7 +161,7 @@ fn map_segment(
     for page_idx in 0..page_count 
     {
         let current_page = page.offset_by(page_idx);
-        memory::paging::add_page(allocator, page_table, current_page, paging::EntryFlags::empty())
+        memory::paging::add_page(page_table, current_page, paging::EntryFlags::empty())
     }
 }
 

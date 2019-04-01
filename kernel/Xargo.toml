@@ -2,5 +2,5 @@
 core = {}
 
 
-[target.aarch64-none-elf.dependencies]
+[target.aarch64-linux-gnu.dependencies]
 alloc = {}

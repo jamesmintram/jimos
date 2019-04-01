@@ -26,7 +26,7 @@ impl HeapAllocator for LinkedListAllocator {
     {
         let frame_count = (size / memory::PAGE_SIZE) + 1;
         println!("Alloc {} frames from list allocator\n", frame_count);
-        memory::alloc_pages(self.allocator, frame_count)
+        memory::alloc_pages(frame_count)
     }
     fn release(&mut self, _ptr: *mut u8) 
     {

@@ -16,7 +16,6 @@ pub struct Process<'a>
     
     // Context
     pub frame: TrapFrame,
-
     pub kernel_stack: memory::VirtualAddress,
     //TODO: Kernel Stack
 
@@ -48,13 +47,13 @@ pub const DEFAULT_STACK_MAX_SIZE: usize = ONE_MB * 8;
 
 impl<'a> Process<'a>
 {
-    pub fn new(allocator: &'a LockedAreaFrameAllocator) -> Process<'a>
+    pub fn new() -> Process<'a>
     {
         /*
             TODO: Add Result type to this and plenty of ?
             Enforce Range: Start < End
         */
-        let mut new_as = address_space::AddressSpace::new(allocator);    
+        let mut new_as = address_space::AddressSpace::new();    
         
         let heap_desc = address_space::AddressSegmentDesc{
             range: address_space::AddressRange{start: DEFAULT_HEAP_BASE, end: DEFAULT_HEAP_BASE + DEFAULT_HEAP_SIZE},
@@ -70,7 +69,7 @@ impl<'a> Process<'a>
         let text_seg_id = new_as.add_segment(&text_desc);
         let stack_seg_id = new_as.add_segment(&stack_desc);
 
-        let kern_stack_frame = memory::kalloc::alloc_frame(allocator);
+        let kern_stack_frame = memory::kalloc::alloc_frame();
         let kernel_stack = memory::physical_to_kernel(kern_stack_frame.start_address());
 
         let new_process: Process<'a> = Process{

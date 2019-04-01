@@ -34,7 +34,7 @@ impl HeapAllocator for SlabAllocator {
 
                 self.bucket_data.add_one(
                     || {
-                        let (start, end) = memory::alloc_frames(allocator, 1);
+                        let (start, end) = memory::alloc_frames(1);
                         Bucket::new(start, end, object_size)
                     },
                     |bucket| { bucket.take() }

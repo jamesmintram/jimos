@@ -44,6 +44,40 @@ pub const ADDRESS_MASK: usize = 0x0000FFFF_FFFFF000;
 pub const TOTAL_MEMORY: usize = 0x3EFFFFFF;
 pub const TOTAL_PAGE_FRAMES: usize = TOTAL_MEMORY / PAGE_SIZE;
 
+//--------------------------------------------------------------------
+
+//pub const HEAP_START: usize = 1024 * 1024 * 256; // 256MB for now
+pub const HEAP_SIZE: usize = 1024 * 1024 * 256; // 256MB for now
+
+pub static mut KERNEL_FRAME_ALLOCATOR: LockedAreaFrameAllocator = LockedAreaFrameAllocator::empty();
+pub static mut ANON_FRAME_ALLOCATOR: LockedAreaFrameAllocator = LockedAreaFrameAllocator::empty();
+
+//static mut HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
+extern "C" {
+    static mut kernel_end: u8;
+}
+
+pub fn init() {
+    //kernel_end comes from linker scripts
+    let kernel_end_addr =  unsafe{(&kernel_end as *const _) as usize};
+
+    // Initialise the heaps
+    let heap_start = kernel_end_addr + memory::KERNEL_ADDRESS_START;
+    let heap_end = heap_start + HEAP_SIZE;
+    
+    let anon_mem_start = heap_end;
+    let anon_mem_end = anon_mem_start + HEAP_SIZE;
+
+    unsafe {
+        KERNEL_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(kernel_end_addr, anon_mem_start));
+        ANON_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(anon_mem_start, anon_mem_end));
+
+        ::HEAP_ALLOCATOR.init(&KERNEL_FRAME_ALLOCATOR);
+    }
+}
+
+//--------------------------------------------------------------------
+
 impl Frame {
     fn containing_address(address: usize) -> Frame {
         let masked_address = address & ADDRESS_MASK;

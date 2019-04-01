@@ -20,6 +20,8 @@ extern crate spin;
 
 extern crate elf;
 
+extern crate hashmap_core;
+
 pub mod lang_items;
 
 #[macro_use]
@@ -28,6 +30,7 @@ mod kwriter;
 mod arch;
 mod memory;
 mod process;
+mod thread;
 mod syscall;
 
 mod uart;
@@ -53,20 +56,13 @@ pub use arch::aarch64::trap::do_el1h_sync;
 
 extern "C" {
     fn exit();
-    static mut kernel_end: u8;
+
 }
-
-//--------------------------------------------------------------------
-//pub const HEAP_START: usize = 1024 * 1024 * 256; // 256MB for now
-pub const HEAP_SIZE: usize = 1024 * 1024 * 256; // 256MB for now
-
-static mut KERNEL_FRAME_ALLOCATOR: LockedAreaFrameAllocator = LockedAreaFrameAllocator::empty();
-static mut ANON_FRAME_ALLOCATOR: LockedAreaFrameAllocator = LockedAreaFrameAllocator::empty();
-
 
 #[global_allocator]
 static mut HEAP_ALLOCATOR: LockedSlabHeap = LockedSlabHeap::empty();
-//static mut HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
+
+//--------------------------------------------------------------------
 
 #[no_mangle]
 pub unsafe extern "C" fn kmain()
@@ -82,21 +78,10 @@ pub unsafe extern "C" fn kmain()
 
     println!("Building kernel page tables\n");
 
-    let kernel_end_addr =  (&kernel_end as *const _) as usize;
 
-    println!("Kernel ends at {}\n", kernel_end_addr);
+   //println!("Kernel ends at {}\n", kernel_end_addr);
 
-    // Initialise the heaps
-    let heap_start = kernel_end_addr + memory::KERNEL_ADDRESS_START;
-    let heap_end = heap_start + HEAP_SIZE;
-    
-    let anon_mem_start = heap_end;
-    let anon_mem_end = anon_mem_start + HEAP_SIZE;
 
-    KERNEL_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(kernel_end_addr, anon_mem_start));
-    ANON_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(anon_mem_start, anon_mem_end));
-
-    HEAP_ALLOCATOR.init(&KERNEL_FRAME_ALLOCATOR);
 
 
 
@@ -118,8 +103,28 @@ pub unsafe extern "C" fn kmain()
     //     "Pushed some vec\n");
     //----------------------
 
-    let mut root_process = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
-    rootprocess::boot_root_process(root_process);
+    memory::init();
+
+    //TODO: Get inside a thread context
+    //thread::create_first_thread();
+    //thread::switch_to_first_thread(first_thread_id)
+    //     This just sets the correct CPU registers
+
+    //TODO: Create and schedule another thread
+    //TODO: How are stacks managed for threads with no Process?
+    //TODO: How do we pass in the function we want to run?
+    let idle_thread = thread::create_thread(None);
+    thread::start_thread(idle_thread);
+
+    //TODO: We could create some more threads
+
+
+    //This will bottom out into an eret
+    scheduler::switch_to_next();
+
+
+    //let mut root_process = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
+    //rootprocess::boot_root_process(root_process);
 
     //process1.exec(&elf);    
 

@@ -76,18 +76,17 @@ pub fn unmap<A>(
     let frame = p1[page.p1_index()].pointed_frame().unwrap();
     p1[page.p1_index()].set_unused();
     // TODO free p(1,2,3) table if empty
-    memory::kalloc::deallocate_frame(allocator, frame);
+    memory::kalloc::deallocate_frame(frame);
 }
 
 pub fn add_page(
-    allocator: &LockedAreaFrameAllocator,
     page_table: &mut Table<Level4>,
     page: Page, 
     flags: EntryFlags) 
 {
-    let p3 = page_table.next_table_create(page.p4_index(), allocator);
-    let p2 = p3.next_table_create(page.p3_index(), allocator);
-    let p1 = p2.next_table_create(page.p2_index(), allocator);
+    let p3 = page_table.next_table_create(page.p4_index());
+    let p2 = p3.next_table_create(page.p3_index());
+    let p1 = p2.next_table_create(page.p2_index());
 
     //TODO: Reinstate with proper semantics
     //assert!(p1[page.p1_index()].is_unused());
@@ -97,20 +96,19 @@ pub fn add_page(
 }
 
 pub fn map_to(
-    allocator: &LockedAreaFrameAllocator,
     page_table: &mut Table<Level4>,
     page: Page,
     frame: Frame, 
     flags: EntryFlags)
 {
     //print!("P3 [P4 Index: {:X?}]\n", page.p4_index());
-    let p3 = page_table.next_table_create(page.p4_index(), allocator);
+    let p3 = page_table.next_table_create(page.p4_index());
 
     //print!("P2 [P3 Index: {}]\n", page.p3_index());
-    let p2 = p3.next_table_create(page.p3_index(), allocator);
+    let p2 = p3.next_table_create(page.p3_index());
 
     //print!("P1 [P2 Index: {}]\n", page.p2_index());
-    let p1 = p2.next_table_create(page.p2_index(), allocator);
+    let p1 = p2.next_table_create(page.p2_index());
 
     //TODO: Reinstate with proper semantics
     //assert!(p1[page.p1_index()].is_unused());

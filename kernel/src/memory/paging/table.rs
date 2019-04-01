@@ -78,12 +78,11 @@ impl<L> Table<L> where L: HierarchicalLevel {
 
     pub fn next_table_create(
         &mut self,
-        index: usize,
-        allocator: &LockedAreaFrameAllocator) -> &mut Table<L::NextLevel>
+        index: usize) -> &mut Table<L::NextLevel>
     {
         if self.next_table(index).is_none() {
             
-            let frame = kalloc::alloc_frame(allocator); 
+            let frame = kalloc::alloc_frame(); 
             
             self.entries[index]
                 .set(frame, PRESENT | TABLE_DESCRIPTOR);
@@ -113,9 +112,9 @@ impl<L> IndexMut<usize> for Table<L> where L: TableLevel {
     }
 }
 
-pub fn new (frame_allocator: &LockedAreaFrameAllocator) -> &mut Table<Level4>
+pub fn new () -> &'static mut Table<Level4>
 {
-    let new_pgt = kalloc::alloc_page(frame_allocator);
+    let new_pgt = kalloc::alloc_page();
     let new_pgt_ptr: *mut Table<Level4> = new_pgt as *mut _;
     let new_pgt = unsafe { &mut (*new_pgt_ptr) };
 

@@ -45,7 +45,7 @@ fn root_process() {
     }
 
     loop {
-        scheduler::sleep();
+        //scheduler::sleep();
     }
 
     //  // //Dump program (Hacky hex print)
