@@ -4,7 +4,7 @@ use arch::aarch64::arm;
 use memory::virtual_address;
 use process;
 
-#[allow(non_camel_case_types)]
+
 
 // ESR - Instruction Fault Status Code
 // -----------------------------------
@@ -81,7 +81,6 @@ fn fault_info_from_esr(esr: u32) -> FaultInfo {
         stage: fault_stage_from_u32(stage),
     }   
 }
-
 
 
 #[derive(Copy, Clone ,Debug, PartialEq)]

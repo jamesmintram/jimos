@@ -2,7 +2,7 @@
 //use core::fmt::Write;
 
 use memory;
-use memory::LockedAreaFrameAllocator;
+
 use memory::slab_allocator::HeapAllocator;
 use memory::slab_allocator::bucket::Bucket;
 use memory::slab_allocator::bucket::BucketStatus;

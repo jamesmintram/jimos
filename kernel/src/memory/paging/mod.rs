@@ -4,7 +4,6 @@ pub mod table;
 use memory::PAGE_SIZE; 
 use memory::Frame;
 use memory::FrameAllocator;
-use memory::LockedAreaFrameAllocator;
 use memory;
 
 pub use self::entry::*;

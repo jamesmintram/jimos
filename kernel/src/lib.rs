@@ -39,8 +39,6 @@ mod scheduler;
 
 mod test;
 
-use core::slice;
-
 //use memory::LockedAreaFrameAllocator;
 use memory::slab_allocator::LockedSlabHeap;
 

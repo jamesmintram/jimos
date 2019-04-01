@@ -1,7 +1,5 @@
 use alloc::alloc::{Layout, GlobalAlloc};
 
-use memory::LockedAreaFrameAllocator;
-
 use core::ops::Deref;
 use spin::Mutex;
 

@@ -117,7 +117,7 @@ pub fn create_thread(trampoline: Option<Trampoline>) -> ThreadId
 pub fn start_thread(thread_id: ThreadId) {
     thread_sys_mut().update(
         thread_id,
-        |current_thread| {
+        |_current_thread| {
             //TODO: Update thread status
 
             scheduler::register_thread(thread_id);

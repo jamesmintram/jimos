@@ -2,7 +2,6 @@ use alloc::boxed::Box;
 
 use memory;
 
-use memory::LockedAreaFrameAllocator;
 use core::slice;
 use core::mem::size_of;
 

@@ -36,7 +36,7 @@ pub fn boot_root_process (mut process: process::Process ) {
 fn root_process() {
     println!("Entered root process");
 
-    let mut process = process::get_current_process();
+    let process = process::get_current_process();
 
     if process.fork() {
         println!("I am forked");

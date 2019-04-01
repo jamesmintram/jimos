@@ -1,5 +1,4 @@
 use memory;
-use memory::LockedAreaFrameAllocator;
 use memory::slab_allocator::HeapAllocator;
 
 pub struct LinkedListAllocator 
