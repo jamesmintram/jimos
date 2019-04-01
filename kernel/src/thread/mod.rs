@@ -32,17 +32,20 @@ impl ThreadSystem {
     {
         let mut new_thread: Thread = Default::default();
         
-        //let kern_stack_frame = memory::kalloc::alloc_frame(allocator);
-        //let kernel_stack = memory::physical_to_kernel(kern_stack_frame.start_address());
+        let kern_stack_frame = memory::kalloc::alloc_frame();
+        let kernel_stack = memory::physical_to_kernel(kern_stack_frame.start_address());
 
-        //NOTE: Could fail? If so, return invalid ThreadId
-        init(&mut new_thread);
-        
+        //TODO: Check we have been able to create required resources - if not, early return
+
         self.current_id += 1;        
 
         new_thread.id = self.current_id;
-        self.threads.insert(new_thread.id, new_thread);
+        new_thread.kernel_stack = kernel_stack;
 
+        //NOTE: Could fail? If so, return invalid ThreadId + free resources
+        init(&mut new_thread);
+        
+        self.threads.insert(new_thread.id, new_thread);
         self.current_id
     }
 
@@ -95,7 +98,7 @@ pub fn create_thread(trampoline: Option<Trampoline>) -> ThreadId
 
             //TODO: Setup parameter to tramampoline
 
-            frame.tf_sp = 0x0;//stack_range.end as u64;
+            frame.tf_sp = new_thread.kernel_stack as u64;//stack_range.end as u64;
             frame.tf_elr = trampoline_fn as u64;
             frame.tf_lr = 0x0;//text_range.start as u64;
 
@@ -124,6 +127,7 @@ pub fn start_thread(thread_id: ThreadId) {
 
 fn default_trampoline() {
     println!("Tramampoline\n");
+    loop{};
 }
 
 pub fn resume(thread_id: ThreadId) {
