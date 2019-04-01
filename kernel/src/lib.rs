@@ -13,7 +13,7 @@
 #[macro_use]
 extern crate bitflags;
 
-// #[macro_use]
+#[macro_use]
 extern crate alloc;
 
 extern crate spin;
@@ -39,6 +39,8 @@ mod mailbox;
 mod panic;
 mod rootprocess;
 mod scheduler;
+
+mod test;
 
 use core::slice;
 
@@ -77,33 +79,13 @@ pub unsafe extern "C" fn kmain()
     arm::print_cache_info();
 
     println!("Building kernel page tables\n");
-
-
    //println!("Kernel ends at {}\n", kernel_end_addr);
 
 
-
-
-
-    // Heap Test
-    //----------------------
-    // let mut vec_test = vec![1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2,3,4,5,6,7];
-    // vec_test[3] = 42;
-
-    // for _i in 0..1098 {
-    //     vec_test.push(1);
-    // }
-
-    // for i in &vec_test {
-    //     write!(kwriter::WRITER,"{} ", i);
-    // }
-
-    // write!(
-    //     kwriter::WRITER, 
-    //     "Pushed some vec\n");
-    //----------------------
-
     memory::init();
+
+    //test::heap();
+    //test::deadlock();
 
     //TODO: Get inside a thread context
     //thread::create_first_thread();
@@ -194,12 +176,6 @@ pub unsafe extern "C" fn kmain()
     //TODO GET WORKING ON HARDWARE
 
 
-    // // Deadlock test TODO: Make this pass
-    // if let Some(ref mut allocator) = *KERNEL_FRAME_ALLOCATOR.lock() {
-    //     if let Some(ref mut _allocator) = *KERNEL_FRAME_ALLOCATOR.lock() {
-    //         allocator.allocate_frame();
-    //     }
-    // }   
 
     //----------------------
 
