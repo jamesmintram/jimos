@@ -1,6 +1,5 @@
 use memory;
 use memory::kalloc;
-use memory::LockedAreaFrameAllocator;
 use memory::physical_to_kernel;
 
 use memory::paging::entry::*;

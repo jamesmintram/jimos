@@ -1,6 +1,6 @@
 use process;
-use scheduler;
-use arch::aarch64::arm;
+//use scheduler;
+//use arch::aarch64::arm;
 
 pub fn boot_root_process (mut process: process::Process ) {
     //let stack_range = process.address_space.get_segment_range(process.stack);
@@ -38,7 +38,7 @@ fn root_process() {
 
     let mut process = process::get_current_process();
 
-    if (process.fork()) {
+    if process.fork() {
         println!("I am forked");
     } else {
         println!("I am root");

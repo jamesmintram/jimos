@@ -5,18 +5,14 @@ use memory::slab_allocator::HeapAllocator;
 pub struct LinkedListAllocator 
 {
     count: usize,
-
-    //TODO: Fix the lifetime
-    allocator: &'static LockedAreaFrameAllocator,
 }
 
 impl LinkedListAllocator 
 {
-    pub fn new(frame_allocator: &'static LockedAreaFrameAllocator) -> LinkedListAllocator 
+    pub fn new() -> LinkedListAllocator 
     {
         LinkedListAllocator {
             count: 0,
-            allocator: frame_allocator,
         }
     }    
 }

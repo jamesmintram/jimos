@@ -14,8 +14,6 @@ pub struct SlabAllocator
     object_size: usize,
 
     bucket_data: PagedVector,
-    //TODO: Fix the lifetime
-    allocator: &'static LockedAreaFrameAllocator,
 }
 
 impl HeapAllocator for SlabAllocator {
@@ -29,7 +27,6 @@ impl HeapAllocator for SlabAllocator {
             |bucket|  { bucket.take() })
         .or_else(
             || {
-                let allocator = self.allocator;
                 let object_size = self.object_size;
 
                 self.bucket_data.add_one(
@@ -58,14 +55,13 @@ impl HeapAllocator for SlabAllocator {
 
 impl SlabAllocator 
 {
-    pub fn new(allocator: &'static LockedAreaFrameAllocator, object_size: usize) -> SlabAllocator 
+    pub fn new(object_size: usize) -> SlabAllocator 
     {
         SlabAllocator {
             //head: 0 as *mut Bucket,
             count: 0,
             object_size: object_size,
-            bucket_data: PagedVector::new(allocator),
-            allocator: allocator,
+            bucket_data: PagedVector::new(),
         }
     }    
 }

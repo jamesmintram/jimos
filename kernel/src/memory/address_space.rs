@@ -3,7 +3,6 @@ use alloc::vec::Vec;
 use memory;
 use memory::paging;
 use memory::paging::table;
-use memory::LockedAreaFrameAllocator;
 
 struct AddressSegment
 {

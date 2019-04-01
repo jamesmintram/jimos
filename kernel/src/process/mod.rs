@@ -1,5 +1,4 @@
 use memory;
-use memory::LockedAreaFrameAllocator;  
 use memory::address_space;
 
 

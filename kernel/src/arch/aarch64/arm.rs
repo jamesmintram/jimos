@@ -59,7 +59,7 @@ pub fn exception_return(frame: &TrapFrame)
 	 * Ensure compiler barrier, otherwise the monitor clear might
 	 * occur too late for us ?
 	 */
-     let frame_ptr = frame as *const TrapFrame;
+     let _frame_ptr = frame as *const TrapFrame;
     unsafe { asm!("
             mov x0, $0
             b _enter_userspace

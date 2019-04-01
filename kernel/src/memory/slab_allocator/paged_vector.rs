@@ -24,7 +24,7 @@ impl PagedVectorPage {
         return self.count == self.max();
     }
 
-    fn new(frame_allocator: &'static LockedAreaFrameAllocator) -> Box<PagedVectorPage> 
+    fn new() -> Box<PagedVectorPage> 
     {
         let page = memory::alloct_pages::<PagedVectorPage>(1);
         unsafe {
@@ -65,22 +65,18 @@ impl PagedVectorPage {
 
 pub struct PagedVector {
     head: Box<PagedVectorPage>,
-
-    //TODO: Fix the lifetime
-    allocator: &'static LockedAreaFrameAllocator,
 }
 
 impl PagedVector 
 {
-    pub fn new(allocator: &'static LockedAreaFrameAllocator) -> PagedVector 
+    pub fn new() -> PagedVector 
     {
-        let first_page = PagedVectorPage::new(allocator);
+        let first_page = PagedVectorPage::new();
 
         println!("PagedVector created, {} descriptors per Page\n", first_page.max());
 
         return PagedVector{
             head: first_page,
-            allocator: allocator,
         }
     }
 

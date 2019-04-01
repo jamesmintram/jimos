@@ -94,7 +94,7 @@ pub fn create_thread(trampoline: Option<Trampoline>) -> ThreadId
 
     thread_sys_mut().create(
         |new_thread| {
-            let mut frame = &mut new_thread.frame;
+            let frame = &mut new_thread.frame;
 
             //TODO: Setup parameter to tramampoline
 

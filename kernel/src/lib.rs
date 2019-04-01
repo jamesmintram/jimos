@@ -15,11 +15,8 @@ extern crate bitflags;
 
 #[macro_use]
 extern crate alloc;
-
 extern crate spin;
-
 extern crate elf;
-
 extern crate hashmap_core;
 
 pub mod lang_items;
@@ -44,7 +41,7 @@ mod test;
 
 use core::slice;
 
-use memory::LockedAreaFrameAllocator;
+//use memory::LockedAreaFrameAllocator;
 use memory::slab_allocator::LockedSlabHeap;
 
 
@@ -58,7 +55,6 @@ pub use arch::aarch64::trap::do_el1h_sync;
 
 extern "C" {
     fn exit();
-
 }
 
 #[global_allocator]
@@ -79,13 +75,14 @@ pub unsafe extern "C" fn kmain()
     arm::print_cache_info();
 
     println!("Building kernel page tables\n");
-   //println!("Kernel ends at {}\n", kernel_end_addr);
+    //println!("Kernel ends at {}\n", kernel_end_addr);
 
 
     memory::init();
 
     //test::heap();
     //test::deadlock();
+    //test::thread_custom_trampoline();
 
     //TODO: Get inside a thread context
     //thread::create_first_thread();

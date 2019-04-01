@@ -72,7 +72,7 @@ pub fn init() {
         KERNEL_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(kernel_end_addr, anon_mem_start));
         ANON_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(anon_mem_start, anon_mem_end));
 
-        ::HEAP_ALLOCATOR.init(&KERNEL_FRAME_ALLOCATOR);
+        ::HEAP_ALLOCATOR.init();
     }
 }
 

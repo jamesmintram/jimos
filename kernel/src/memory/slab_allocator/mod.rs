@@ -51,17 +51,17 @@ enum ObjectSize {
 
 impl HeapSlabAllocator 
 {
-    pub fn new(frame_allocator: &'static LockedAreaFrameAllocator) -> HeapSlabAllocator {
+    pub fn new() -> HeapSlabAllocator {
         HeapSlabAllocator {
-            slab64: SlabAllocator::new(frame_allocator, 64),
-            slab128: SlabAllocator::new(frame_allocator, 128),
-            slab256: SlabAllocator::new(frame_allocator, 256),
-            slab512: SlabAllocator::new(frame_allocator, 512),
-            slab1024: SlabAllocator::new(frame_allocator, 1024),
-            slab2048: SlabAllocator::new(frame_allocator, 2048),
-            slab4096: SlabAllocator::new(frame_allocator, 4096),
+            slab64: SlabAllocator::new( 64),
+            slab128: SlabAllocator::new( 128),
+            slab256: SlabAllocator::new( 256),
+            slab512: SlabAllocator::new( 512),
+            slab1024: SlabAllocator::new( 1024),
+            slab2048: SlabAllocator::new( 2048),
+            slab4096: SlabAllocator::new( 4096),
 
-            large: LinkedListAllocator::new(frame_allocator),
+            large: LinkedListAllocator::new(),
         }
     }
 
@@ -124,8 +124,8 @@ impl LockedSlabHeap {
     }
 
     //NOTE: NOT THREAD SAFE!
-    pub fn init(&mut self, allocator:  &'static LockedAreaFrameAllocator) {
-        self.0 = Mutex::new(Some(HeapSlabAllocator::new(allocator)));
+    pub fn init(&mut self) {
+        self.0 = Mutex::new(Some(HeapSlabAllocator::new()));
     }
 }
 

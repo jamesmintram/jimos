@@ -61,8 +61,7 @@ pub fn translate_page(
 
 pub fn unmap<A>(
     page_table: &mut Table<Level4>, 
-    page: Page, 
-    allocator: &LockedAreaFrameAllocator)
+    page: Page)
         where A: FrameAllocator
 {
     assert!(memory::virtual_to_physical(page_table, page.start_address()).is_some());
@@ -115,7 +114,7 @@ pub fn map_to(
     
     //print!("VA [P1 Index: {}]\n", page.p1_index());
     let new_flags = flags | PRESENT | ACCESS | TABLE_DESCRIPTOR;
-    let new =  (frame.start_address() as u64) | new_flags.bits();
+    let _new =  (frame.start_address() as u64) | new_flags.bits();
 
 
     //print!("CURRENT: {:X?}\n", p1[page.p1_index()].test());
