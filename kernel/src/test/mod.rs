@@ -24,8 +24,11 @@ pub fn deadlock()
 
 pub fn thread_custom_trampoline()
 {
-    let idle_thread = thread::create_thread(Some(||{
-        println!("My own tam tam tamborine");
-    }));
+    let idle_thread = thread::create_thread(
+        |fn_param| {},
+        Some(|fn_ptr, fn_param|{
+            println!("My own tam tam tamborine");
+        }));
+
     thread::start_thread(idle_thread);
 }

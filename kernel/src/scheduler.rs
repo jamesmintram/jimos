@@ -27,15 +27,17 @@ impl SchedulerSystem {
         //process::switch_process(&mut process);
         //process::resume_current_process();
 
-        
-        arm::set_thread_ptr(self.current_id);
-        thread::resume(self.current_id);
+
+        // DISABLED FOR NOW        
+        // println!("arm::set_thread_ptr");
+        // arm::set_thread_ptr(self.current_id);
+
+        // println!("thread::resume");
+        // thread::resume(self.current_id);
 
 
         //TODO: (if required) Switch the page table 
         //memory::activate_address_space(&next_process.address_space)
-        
-        
     }
 }
 
@@ -57,5 +59,14 @@ pub fn register_thread(thread_id: ThreadId) {
 }
 
 pub fn switch_to_next() {
-    sched_sys_mut().switch_to_next();
+    //sched_sys_mut().switch_to_next();
+
+    //Need to GDB and figure out what it is trying to do
+    //second time around!
+
+    println!("arm::set_thread_ptr");
+    arm::set_thread_ptr(1);
+
+    println!("thread::resume");
+    thread::resume(1);
 }

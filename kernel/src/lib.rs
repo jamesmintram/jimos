@@ -90,7 +90,7 @@ pub unsafe extern "C" fn kmain()
     //TODO: Create and schedule another thread
     //TODO: How are stacks managed for threads with no Process?
     //TODO: How do we pass in the function we want to run?
-    let idle_thread = thread::create_thread(None);
+    let idle_thread = thread::create_thread(thread::idle::idle, None);
     thread::start_thread(idle_thread);
 
     //TODO: We could create some more threads

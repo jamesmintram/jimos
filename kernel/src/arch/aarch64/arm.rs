@@ -1,4 +1,6 @@
 use super::frame::TrapFrame;
+use arch::aarch64::arm;
+
 
 pub fn read_far_el1() -> u64
 {
@@ -41,6 +43,9 @@ pub fn resume_process(frame: &TrapFrame)
 	 * occur too late for us ?
 	 */
      let _frame_ptr = frame as *const TrapFrame;
+     println!("ResumeProcess:frame_ptr {:X}", _frame_ptr as usize);
+     arm::dump_frame(&*frame);
+
     unsafe { asm!("
             mov x0, $0
             b _resume_process

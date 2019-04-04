@@ -1,0 +1,1 @@
+aarch64-linux-gnu-gdb --command=qemu_attach.gdb

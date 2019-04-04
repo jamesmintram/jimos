@@ -6,6 +6,8 @@ use hashmap_core::HashMap;
 use spin::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use scheduler;
 
+pub mod idle;
+
 #[derive(Default)]
 struct Thread {
     pub frame: TrapFrame,
@@ -83,9 +85,13 @@ fn thread_sys_mut() -> RwLockWriteGuard<'static, ThreadSystem> {
 
 pub type ThreadId = usize;
 
-pub type Trampoline = fn() -> ();
+pub type Trampoline = fn(fn_ptr: u64, fn_param: u64) -> ();
+pub type ThreadFn = fn(param: u64) -> ();
 
-pub fn create_thread(trampoline: Option<Trampoline>) -> ThreadId 
+
+pub fn create_thread(
+    thread_fn: ThreadFn, 
+    trampoline: Option<Trampoline>) -> ThreadId 
 {
     let trampoline_fn = match trampoline {
         Some(func) => func,
@@ -96,7 +102,11 @@ pub fn create_thread(trampoline: Option<Trampoline>) -> ThreadId
         |new_thread| {
             let frame = &mut new_thread.frame;
 
-            //TODO: Setup parameter to tramampoline
+            //Setup parameter to tramampoline
+            // X0 - thread func
+            frame.tf_x[0] = thread_fn as u64;
+            // X1 - thread parameter
+            frame.tf_x[1] = 0xBEEF;
 
             frame.tf_sp = new_thread.kernel_stack as u64;//stack_range.end as u64;
             frame.tf_elr = trampoline_fn as u64;
@@ -105,7 +115,7 @@ pub fn create_thread(trampoline: Option<Trampoline>) -> ThreadId
             let mut spsr : u32 = 0;
 
             spsr |= 1 << 2;     // .M[3:2] = 0b100 -->  Return to EL1
-            spsr |= 1 << 6;     // FIQ masked
+            //spsr |= 1 << 6;     // FIQ masked
             spsr |= 1 << 7;     // IRQ masked
             spsr |= 1 << 8;     // SError (System Error) masked
             spsr |= 1 << 9; 
@@ -124,13 +134,29 @@ pub fn start_thread(thread_id: ThreadId) {
         });
 }
 
+fn default_trampoline(fn_ptr: u64, fn_param: u64) {
+    // println!("Tramampoline\n");    
+    // println!("fn    {:X}", fn_ptr);
+    // println!("Param {}", fn_param);
 
-fn default_trampoline() {
-    println!("Tramampoline\n");
-    loop{};
+
+    //TODO: This is a hack mess
+    let func_ptr_ptr = &fn_ptr as *const u64 as usize; 
+    let func = func_ptr_ptr as *const ThreadFn;
+
+    unsafe {
+        (*func)(fn_param);
+    }
+    
+    println!("Trampoline end");
+
+    scheduler::switch_to_next();
+
+    panic!("Fallen through a trampoline switchback");
 }
 
 pub fn resume(thread_id: ThreadId) {
+    println!("Thread resume");
     if let Some(thread) = thread_sys().get(thread_id) {
         arm::resume_process(&thread.frame);
     } else {
