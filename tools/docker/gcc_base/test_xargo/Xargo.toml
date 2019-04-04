@@ -1,0 +1,6 @@
+[dependencies]
+core = {}
+
+
+[target.aarch64-linux-gnu.dependencies]
+alloc = {}

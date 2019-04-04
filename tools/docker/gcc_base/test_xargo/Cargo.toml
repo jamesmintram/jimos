@@ -1,0 +1,8 @@
+[package]
+name = "testbuild"
+version = "0.1.0"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
