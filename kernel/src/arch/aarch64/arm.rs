@@ -36,6 +36,18 @@ pub fn get_thread_id() -> thread::ThreadId {
     thread_id
 }
 
+pub fn switch_to_initial(first_thread_addr: usize) {
+    unsafe { asm!("
+            mov x0, $0
+            b _initial_thread_start
+        "
+        :
+        : "r"(first_thread_addr)
+        :
+        );  //TODO: Need to ensure CLOBBERS are working
+    }
+}
+
 pub fn switch_thread(current_thread_addr: usize, next_thread_addr: usize)
 {
     /*
@@ -52,12 +64,12 @@ pub fn switch_thread(current_thread_addr: usize, next_thread_addr: usize)
 
     unsafe { asm!("
             mov x0, $0
-            mov x1, $0
+            mov x1, $1
             b _resume_process
         "
         :
-        : "r"(next_thread_addr)
-        , "r"(current_thread_addr)
+        : "r"(current_thread_addr)
+        , "r"(next_thread_addr)
         :
         );  //TODO: Need to ensure CLOBBERS are working
     };

@@ -5,89 +5,6 @@
 
 
 
-.macro	save_registers el
-
-  /*
-    --------------------------- SP + TF_SIZE + 16
-    x30     | Back trace
-    x29     |
-    --------------------------- SP + TF_SIZE
-    TrapFrame
-    --------------------------- SP
-
-    X29 Holds SP + TF_SIZE (ie the Back trace)
-  */
-
-	sub	sp, sp, #(TF_SIZE + 16)
-	stp	x29, x30, [sp, #(TF_SIZE)]
-
-	stp	x28, x29, [sp, #(TF_X + 28 * 8)]
-	stp	x26, x27, [sp, #(TF_X + 26 * 8)]
-	stp	x24, x25, [sp, #(TF_X + 24 * 8)]
-	stp	x22, x23, [sp, #(TF_X + 22 * 8)]
-	stp	x20, x21, [sp, #(TF_X + 20 * 8)]
-	stp	x18, x19, [sp, #(TF_X + 18 * 8)]
-	stp	x16, x17, [sp, #(TF_X + 16 * 8)]
-	stp	x14, x15, [sp, #(TF_X + 14 * 8)]
-	stp	x12, x13, [sp, #(TF_X + 12 * 8)]
-	stp	x10, x11, [sp, #(TF_X + 10 * 8)]
-	stp	x8,  x9,  [sp, #(TF_X + 8  * 8)]
-	stp	x6,  x7,  [sp, #(TF_X + 6  * 8)]
-	stp	x4,  x5,  [sp, #(TF_X + 4  * 8)]
-	stp	x2,  x3,  [sp, #(TF_X + 2  * 8)]
-	stp	x0,  x1,  [sp, #(TF_X + 0  * 8)]
-
-	mrs	x10, elr_el1
-	mrs	x11, spsr_el1
-	mrs	x12, esr_el1
-
-
-	str	x10, [sp, #(TF_ELR)]
-	stp	w11, w12, [sp, #(TF_SPSR)]
-
-  mov x18, sp
-	stp	x18, x30, [sp, #(TF_SP)] //Assembler did not like lr so x30
-
-	add	x29, sp, #(TF_SIZE)
-.endm
-
-.macro	restore_registers el
-
-  ldp	x18, x30, [sp, #(TF_SP)] //Assembler did not like lr so x30
-  mov sp, x18
-
-	ldr	x10, [sp, #(TF_ELR)]
-
-  mov x11, xzr
-  mov x12, xzr
-	ldp	w11, w12, [sp, #(TF_SPSR)]
-
-	msr	elr_el1, x10
-	msr	spsr_el1, x11
-	msr	esr_el1, x12
-
-	ldp	x28, x29, [sp, #(TF_X + 28 * 8)]
-	ldp	x26, x27, [sp, #(TF_X + 26 * 8)]
-	ldp	x24, x25, [sp, #(TF_X + 24 * 8)]
-	ldp	x22, x23, [sp, #(TF_X + 22 * 8)]
-	ldp	x20, x21, [sp, #(TF_X + 20 * 8)]
-	ldp	x18, x19, [sp, #(TF_X + 18 * 8)]
-	ldp	x16, x17, [sp, #(TF_X + 16 * 8)]
-	ldp	x14, x15, [sp, #(TF_X + 14 * 8)]
-	ldp	x12, x13, [sp, #(TF_X + 12 * 8)]
-	ldp	x10, x11, [sp, #(TF_X + 10 * 8)]
-	ldp	x8,  x9,  [sp, #(TF_X + 8  * 8)]
-	ldp	x6,  x7,  [sp, #(TF_X + 6  * 8)]
-	ldp	x4,  x5,  [sp, #(TF_X + 4  * 8)]
-	ldp	x2,  x3,  [sp, #(TF_X + 2  * 8)]
-	ldp	x0,  x1,  [sp, #(TF_X + 0  * 8)]
-
-  ldp	x29, x30, [sp, #(TF_SIZE)]
-
-	add	sp, sp, #(TF_SIZE + 16)
-
-.endm
-
 .macro	restore_frame el
   //x0 - points to the start of the TrapFrame struct
 
@@ -125,13 +42,57 @@
 
   ldp	x18, x19, [x0, #(TF_X + 18 * 8)]
   ldp	x0,  x1,  [x0, #(TF_X + 0  * 8)]
-
 .endm
 
 
-.macro	switch_frame el
-  // X0 = pointer to the next thread frame
-  // X1 = pointer to current thread frame
+
+.macro	save_registers el
+
+  /*
+    --------------------------- SP + TF_SIZE + 16
+    x30     | Back trace
+    x29     |
+    --------------------------- SP + TF_SIZE
+    TrapFrame
+    --------------------------- SP
+
+    X29 Holds SP + TF_SIZE (ie the Back trace)
+  */
+
+	sub	sp, sp, #(TF_SIZE + 16)
+	stp	x29, x30, [sp, #(TF_SIZE)]
+
+	stp	x28, x29, [sp, #(TF_X + 28 * 8)]
+	stp	x26, x27, [sp, #(TF_X + 26 * 8)]
+	stp	x24, x25, [sp, #(TF_X + 24 * 8)]
+	stp	x22, x23, [sp, #(TF_X + 22 * 8)]
+	stp	x20, x21, [sp, #(TF_X + 20 * 8)]
+	stp	x18, x19, [sp, #(TF_X + 18 * 8)]
+	stp	x16, x17, [sp, #(TF_X + 16 * 8)]
+	stp	x14, x15, [sp, #(TF_X + 14 * 8)]
+	stp	x12, x13, [sp, #(TF_X + 12 * 8)]
+	stp	x10, x11, [sp, #(TF_X + 10 * 8)]
+	stp	x8,  x9,  [sp, #(TF_X + 8  * 8)]
+	stp	x6,  x7,  [sp, #(TF_X + 6  * 8)]
+	stp	x4,  x5,  [sp, #(TF_X + 4  * 8)]
+	stp	x2,  x3,  [sp, #(TF_X + 2  * 8)]
+	stp	x0,  x1,  [sp, #(TF_X + 0  * 8)]
+
+	mrs	x10, elr_el1
+	mrs	x11, spsr_el1
+	mrs	x12, esr_el1
+
+	str	x10, [sp, #(TF_ELR)]
+	stp	w11, w12, [sp, #(TF_SPSR)]
+
+  mov x18, sp
+  stp	x18, x30, [sp, #(TF_SP)] //Assembler did not like lr so x30
+
+  add	x29, sp, #(TF_SIZE) //Keeps a valid BackTrace
+.endm
+
+.macro	restore_registers el
+  //x0 - points to the start of the TrapFrame struct
 
 	ldr	x10, [x0, #(TF_ELR)]
   msr	elr_el1, x10
@@ -167,20 +128,48 @@
 
   ldp	x18, x19, [x0, #(TF_X + 18 * 8)]
   ldp	x0,  x1,  [x0, #(TF_X + 0  * 8)]
-
 .endm
+
+
+
+.macro	switch_frame el
+  // X0 = pointer to current thread frame
+  // X1 = pointer to the next thread frame
+
+  save_registers el
+
+  // Update thread context with new SP?
+
+  mov x0, x1
+  restore_registers el
+
+  ret
+.endm
+
+
+  .global	_initial_thread_start
+_initial_thread_start:
+  // X0 = pointer to the next thread frame
+
+  restore_registers 1
+  ret
 
 
   .global _resume_process
 _resume_process:
-  // X0 = pointer to the next thread frame
-  // X1 = pointer to current thread frame
+  // X0 = pointer to current thread frame
+  // X1 = pointer to the next thread frame
 
-  // Preconditions:
-  //    X0 != X1
-  switch_frame 1
+  save_registers 1
+  mov x0, x1
+  restore_registers 1
 
-  eret
+  ret
+
+  //// Preconditions:
+  ////    X0 != X1
+  //switch_frame 1
+  //eret
 
 
 //TODO: This is currently written for the first time

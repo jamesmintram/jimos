@@ -96,19 +96,20 @@ pub unsafe extern "C" fn kmain()
     let idle_thread = thread::create_thread(thread::idle::idle2, None);
     thread::start_thread(idle_thread);
 
-    //TODO: This should be moved into a "thread context bring up" routine
-    arm::set_thread_id(idle_thread);
+    // //TODO: This should be moved into a "thread context bring up" routine
+    // arm::set_thread_id(idle_thread);
 
 
-    let idle_thread = thread::create_thread(thread::idle::idle3, None);
-    thread::start_thread(idle_thread);
+    // let idle_thread = thread::create_thread(thread::idle::idle3, None);
+    // thread::start_thread(idle_thread);
 
     //TODO: We could create some more threads
 
 
-    //This will bottom out into an eret
-    scheduler::switch_to_next();
+    //This will bottom out into a RET
+    // scheduler::switch_to_next();
 
+    thread::switch_to_initial(idle_thread);
 
     //let mut root_process = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
     //rootprocess::boot_root_process(root_process);

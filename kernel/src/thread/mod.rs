@@ -100,7 +100,20 @@ pub fn create_thread(
 
     thread_sys_mut().create(
         |new_thread| {
-            let frame = &mut new_thread.frame;
+            // let frame = &mut new_thread.frame;
+
+            // Create a new frame layout, then write
+            // it to the stack space and make sure SP
+            // is correctly set.
+
+            // TODO: Update when using process AS - get the physical address of SP and convert it to a kernel address
+            let frame_ptr = new_thread.kernel_stack as usize as *mut TrapFrame;
+            let frame_ptr = unsafe {frame_ptr.offset(-1)};
+
+            let frame = unsafe {&mut *frame_ptr};
+
+            //Create a local frame pointer from SP
+            //SP -= sizeof(Frame)
 
             //Setup parameter to tramampoline
             // X0 - thread func
@@ -110,7 +123,7 @@ pub fn create_thread(
 
             frame.tf_sp = new_thread.kernel_stack as u64;//stack_range.end as u64;
             frame.tf_elr = trampoline_fn as u64;
-            frame.tf_lr = 0x0;//text_range.start as u64;
+            frame.tf_lr = trampoline_fn as u64;//text_range.start as u64;
 
             let mut spsr : u32 = 0;
 
@@ -165,8 +178,12 @@ pub fn get_thread_id()  -> usize
 
 pub fn get_thread_frame(thread_id: ThreadId) -> usize {
     if let Some(thread) = thread_sys().get(thread_id) {
-        let frame_ptr = &thread.frame as *const _ as usize;
-        frame_ptr
+
+        let frame_ptr = thread.kernel_stack as usize as *mut TrapFrame;
+        let frame_ptr = unsafe {frame_ptr.offset(-1)};
+
+        // let frame_ptr = &thread.frame as *const _ as usize;
+        frame_ptr as usize
     } else {
         panic!("Invalid thread id: {}", thread_id)
     }
@@ -192,5 +209,15 @@ pub fn switch_to(next_thread_id: ThreadId) {
     arm::set_thread_id(next_thread_id);
     arm::switch_thread(
         current_thread_frame_addr,
+        next_thread_frame_addr);
+}
+
+pub fn switch_to_initial(next_thread_id: ThreadId) {
+    let next_thread_frame_addr = get_thread_frame(next_thread_id);
+
+    println!("ResumeProcess:frame_addr {:X}", next_thread_frame_addr);
+
+    arm::set_thread_id(next_thread_id);
+    arm::switch_to_initial(
         next_thread_frame_addr);
 }
