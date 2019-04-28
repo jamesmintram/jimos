@@ -88,9 +88,6 @@
 
 .endm
 
-
-
-
 .macro	restore_frame el
   //x0 - points to the start of the TrapFrame struct
 
@@ -123,7 +120,6 @@
 .if \el == 0
   msr sp_el0, x18
 .else
-//  msr sp_el0, x18
   mov sp, x18
 .endif
 
@@ -135,9 +131,10 @@
 
   .global _resume_process
 _resume_process:
+  // X0 = pointer to the next thread frame
+  // X1 = pointer to current thread frame
   restore_frame 1
-  //mov x18, 0xFFFF
-  //msr sp_el0, x18
+
   eret
 
 
