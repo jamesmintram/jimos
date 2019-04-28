@@ -44,7 +44,7 @@ pub fn resume_process(frame: &TrapFrame)
 	 */
      let _frame_ptr = frame as *const TrapFrame;
      println!("ResumeProcess:frame_ptr {:X}", _frame_ptr as usize);
-     arm::dump_frame(&*frame);
+    //  arm::dump_frame(&*frame);
 
     unsafe { asm!("
             mov x0, $0
@@ -53,7 +53,7 @@ pub fn resume_process(frame: &TrapFrame)
         :
         : "r"(frame)
         :
-        ); 
+        );
     };
 }
 
@@ -72,7 +72,7 @@ pub fn exception_return(frame: &TrapFrame)
         :
         : "r"(frame)
         :
-        ); 
+        );
     };
     dump_regs();
 }
@@ -89,7 +89,7 @@ fn dump_regs()
     //     :
     //     : "r"(frame_ptr)
     //     :
-    //     ); 
+    //     );
     // };
     // dump_frame(&frame);
 }
@@ -121,12 +121,12 @@ pub fn clrex()
     unsafe { asm!("clrex"::: "memory"); };
 }
 
-pub fn reset_ttbr0_el1() 
+pub fn reset_ttbr0_el1()
 {
     set_ttbr0_el1(0);
 }
 
-pub fn set_ttbr0_el1(value: usize) 
+pub fn set_ttbr0_el1(value: usize)
 {
     //TODO: Fix up the register clobbering
     unsafe {
@@ -136,7 +136,7 @@ pub fn set_ttbr0_el1(value: usize)
         "
         :
         : "r"(value)
-        : 
+        :
         );
     };
 }
@@ -184,7 +184,7 @@ pub fn get_ctr_el0()  -> usize
 static mut D_CACHE_LINE_SIZE: usize = 0;
 static mut I_CACHE_LINE_SIZE: usize = 0;
 
-pub fn dcache_line_size() -> usize 
+pub fn dcache_line_size() -> usize
 {
     //TODO: Debug only
     let size = unsafe{D_CACHE_LINE_SIZE};
@@ -194,7 +194,7 @@ pub fn dcache_line_size() -> usize
 
     size
 }
-pub fn icache_line_size() -> usize 
+pub fn icache_line_size() -> usize
 {
     //TODO: Debug only
     let size = unsafe{I_CACHE_LINE_SIZE};
@@ -217,15 +217,15 @@ pub fn cache_setup()
 
         // Read the log2 words in each D cache line
         let dcache_line_shift = ctr_dline_size(ctr_el0);
-        // Get the D cache line size 
+        // Get the D cache line size
         D_CACHE_LINE_SIZE = core::mem::size_of::<usize>() << dcache_line_shift;
 
-        // And the same for the I cache 
+        // And the same for the I cache
         let icache_line_shift = ctr_iline_size(ctr_el0);
         I_CACHE_LINE_SIZE = core::mem::size_of::<usize>() << icache_line_shift;
         I_CACHE_LINE_SIZE = core::cmp::min(D_CACHE_LINE_SIZE, I_CACHE_LINE_SIZE);
 
-       
+
     }
 
 }

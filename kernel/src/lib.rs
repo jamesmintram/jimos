@@ -4,7 +4,7 @@
 #![feature(alloc)]
 #![feature(panic_info_message)]
 
-#![feature(alloc_error_handler)] 
+#![feature(alloc_error_handler)]
 #![feature(allocator_api)]
 
 //Temporary
@@ -64,12 +64,12 @@ static mut HEAP_ALLOCATOR: LockedSlabHeap = LockedSlabHeap::empty();
 pub unsafe extern "C" fn kmain()
 {
     arm::reset_ttbr0_el1(); //Turn off identity mapping in EL0
-    arm::cache_setup();     
-    
+    arm::cache_setup();
+
     uart::uart_init();
 
     println!("UART init");
-    
+
     arm::print_cache_info();
 
     println!("Building kernel page tables\n");
@@ -90,7 +90,10 @@ pub unsafe extern "C" fn kmain()
     //TODO: Create and schedule another thread
     //TODO: How are stacks managed for threads with no Process?
     //TODO: How do we pass in the function we want to run?
-    let idle_thread = thread::create_thread(thread::idle::idle, None);
+    let idle_thread = thread::create_thread(thread::idle::idle1, None);
+    thread::start_thread(idle_thread);
+
+    let idle_thread = thread::create_thread(thread::idle::idle2, None);
     thread::start_thread(idle_thread);
 
     //TODO: We could create some more threads
@@ -103,14 +106,14 @@ pub unsafe extern "C" fn kmain()
     //let mut root_process = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
     //rootprocess::boot_root_process(root_process);
 
-    //process1.exec(&elf);    
+    //process1.exec(&elf);
 
     //Start process 2
     //process::return_to_userspace();
 
     //TODO: Implement this via an eret/return to user space
     //TODO: Load two processes and run one after the other - ensure they are using different memory
-    //TODO: Refactor the above 
+    //TODO: Refactor the above
 
 
     println!("Exiting jimOS\n");
@@ -120,8 +123,8 @@ pub unsafe extern "C" fn kmain()
     //     Err(err) => println!("ELF: {:#?}\n", err),
     //     _ => println!("ELF Loaded\n"),
     // };
-    
-    
+
+
     // Create a new process
     // Schedule process
 }
@@ -133,15 +136,15 @@ pub unsafe extern "C" fn kmain()
     //
     //
     //  Book keeping for SlabAllocator
-    //  Naive way to release page frames 
-    //  
+    //  Naive way to release page frames
+    //
     //
     //TODO: Look below for the Address space stuff
     //slab_allocator::HeapSlabAllocator::new(&KERNEL_FRAME_ALLOCATOR);
 
     // TODO: Support for deallocate
-    //       Slab allocator 
-    //       Test to churn the heap 
+    //       Slab allocator
+    //       Test to churn the heap
     //          Should crash before we implement dealloc
     //          Should not crash after we implement dealloc
     //
@@ -158,15 +161,15 @@ pub unsafe extern "C" fn kmain()
 
 
     // write!(
-    //     kwriter::WRITER, 
-    //     "UPT1: Data at data: 0x{:X?}\n", 
+    //     kwriter::WRITER,
+    //     "UPT1: Data at data: 0x{:X?}\n",
     //     *data);
 
     // memory::activate_el0(user_table2);
 
     // write!(
-    //     kwriter::WRITER, 
-    //     "Data at data: 0x{:X?}\n", 
+    //     kwriter::WRITER,
+    //     "Data at data: 0x{:X?}\n",
     //     *data);
     //TODO GET WORKING ON HARDWARE
 
@@ -181,7 +184,7 @@ pub unsafe extern "C" fn kmain()
     // Read our bootstrap page table
     // extern "C" {
     //     static mut __page_tables_start: u8;
-    // }   
+    // }
 
     // let page_table_addr =  (& __page_tables_start as *const _ as usize) | memory::KERNEL_ADDRESS_START;
     // let page_table_ptr: *mut Table<Level4> = page_table_addr as *mut _;
@@ -189,12 +192,12 @@ pub unsafe extern "C" fn kmain()
 
     //------------------------------------------------
     //TODO: This should be all fixed up to use UserAddress or KernelAddress
-    // let addr1 = 42 * 512 * 512 * 4096; 
-    // let addr2 = 12 * 512 * 512 * 4096; 
+    // let addr1 = 42 * 512 * 512 * 4096;
+    // let addr2 = 12 * 512 * 512 * 4096;
 
     //TODO: Create entry in process address space
     //      Trigger a page fault
-    //      Fault handler 
+    //      Fault handler
     //          finds page frame to back memory
     //          updates process page table
     //          continues
@@ -206,8 +209,8 @@ pub unsafe extern "C" fn kmain()
     // let add_space = memory::address_space::new();
     // let create_table = || {
     //     let mut lock = KERNEL_FRAME_ALLOCATOR.lock();
-        
-    //     if let Some(ref mut allocator) = *lock 
+
+    //     if let Some(ref mut allocator) = *lock
     //     {
     //         //TODO: Refactor this so that we use memory::alloc(allocator)
     //         return memory::paging::table::new(&mut **allocator);
@@ -222,13 +225,13 @@ pub unsafe extern "C" fn kmain()
     // let create_process = |table| {
     //     let newprocess = process::Process{page_table: table};
     //     return newprocess;
-    // };          
+    // };
 
     //TODO: Refactor this so that we use memory::alloc(allocator)
     // let map_address = |process: &mut process::Process, address| {
     //     let mut lock = KERNEL_FRAME_ALLOCATOR.lock();
-        
-    //     if let Some(ref mut allocator) = *lock 
+
+    //     if let Some(ref mut allocator) = *lock
     //     {
     //         //Map a page into that memory (TODO: Move this)
     //         let page = Page::containing_address(address);
@@ -237,10 +240,10 @@ pub unsafe extern "C" fn kmain()
     //             .expect("no more frames");
 
     //         memory::paging::map_to(
-    //             process.page_table, 
-    //             page, 
-    //             frame, 
-    //             EntryFlags::empty(), 
+    //             process.page_table,
+    //             page,
+    //             frame,
+    //             EntryFlags::empty(),
     //             &mut **allocator
     //             );
     //     }
@@ -248,7 +251,7 @@ pub unsafe extern "C" fn kmain()
     //     {
     //         panic!();
     //     }
-    // };          
+    // };
 
     // let user_table1 = create_table();
     // let mut process1 = process::Process::create(user_table1);
@@ -258,13 +261,13 @@ pub unsafe extern "C" fn kmain()
     // let user_table2 = create_table();
 
     //https://shop.pimoroni.com/products/hdmi-8-lcd-screen-kit-1024x768#description
-    
+
     // //TODO: Why doesn't borrow checker complain?
     // //TODO: This should also activate the "Process" page table
-    
+
     // //process::switch_process(&mut process1);
 
-    // let (user_table2, _frame_allocator) 
+    // let (user_table2, _frame_allocator)
     //     = memory::paging::table::new(frame_allocator);
 
     // {
@@ -274,10 +277,10 @@ pub unsafe extern "C" fn kmain()
     //         .expect("no more frames");
 
     //     memory::paging::map_to(
-    //         user_table2, 
-    //         page, 
-    //         frame, 
-    //         EntryFlags::empty(), 
+    //         user_table2,
+    //         page,
+    //         frame,
+    //         EntryFlags::empty(),
     //         frame_allocator);
     // }
 
@@ -289,18 +292,18 @@ pub unsafe extern "C" fn kmain()
     // process::switch_process(&mut process1);
     // memory::activate_el0(process1.page_table);
 
-    // // TODO GET WORKING ON HARDWARE    
+    // // TODO GET WORKING ON HARDWARE
     // *data = 1024;
     // write!(
-    //     kwriter::WRITER, 
-    //     "UPT1: Data at data: 0x{:X?}\n", 
+    //     kwriter::WRITER,
+    //     "UPT1: Data at data: 0x{:X?}\n",
     //     *data);
 
     // memory::activate_el0(user_table2);
 
     // write!(
-    //     kwriter::WRITER, 
-    //     "Data at data: 0x{:X?}\n", 
+    //     kwriter::WRITER,
+    //     "Data at data: 0x{:X?}\n",
     //     *data);
     //TODO GET WORKING ON HARDWARE
 
@@ -308,8 +311,8 @@ pub unsafe extern "C" fn kmain()
     // memory::activate_el0(user_table1);
 
     // write!(
-    //     kwriter::WRITER, 
-    //     "UPT1: Data at data: 0x{:X?}\n", 
+    //     kwriter::WRITER,
+    //     "UPT1: Data at data: 0x{:X?}\n",
     //     *data);
 
 
@@ -325,7 +328,7 @@ pub unsafe extern "C" fn kmain()
     //     let page = Page::containing_address(addr);
     //     memory::paging::unmap(
     //         user_table1,
-    //         page, 
+    //         page,
     //         frame_allocator);
 
     //     memory::flush_tlb();
