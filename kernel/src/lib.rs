@@ -99,6 +99,7 @@ pub unsafe extern "C" fn kmain()
     //TODO: This should be moved into a "thread context bring up" routine
     arm::set_thread_id(idle_thread);
 
+
     let idle_thread = thread::create_thread(thread::idle::idle3, None);
     thread::start_thread(idle_thread);
 

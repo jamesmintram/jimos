@@ -43,6 +43,13 @@ pub fn switch_thread(current_thread_addr: usize, next_thread_addr: usize)
 	 * occur too late for us ?
 	 */
 
+    // Precondition check
+    if current_thread_addr == next_thread_addr {
+        panic!(
+            "Attempting to switch to the current thread: {:X}",
+            current_thread_addr);
+    }
+
     unsafe { asm!("
             mov x0, $0
             mov x1, $0

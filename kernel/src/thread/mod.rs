@@ -175,19 +175,19 @@ pub fn get_thread_frame(thread_id: ThreadId) -> usize {
 pub fn switch_to(next_thread_id: ThreadId) {
     let current_thread_id = get_thread_id();
 
+    // Precondition check
+    if current_thread_id == next_thread_id {
+        panic!(
+            "thread::switch_to thread IDs are equal: {} : to-> : {}",
+            current_thread_id,
+            next_thread_id);
+    }
+
     let current_thread_frame_addr = get_thread_frame(current_thread_id);
     let next_thread_frame_addr = get_thread_frame(next_thread_id);
 
      println!("ResumeProcess:current_addr {:X}", current_thread_frame_addr);
      println!("ResumeProcess:frame_addr {:X}", next_thread_frame_addr);
-
-    if current_thread_frame_addr == next_thread_frame_addr {
-        let current_thread_id = get_thread_id();
-        panic!(
-            "Attempting to switch to the current thread: {} :: {:X}",
-            current_thread_id,
-            current_thread_frame_addr);
-    }
 
     arm::set_thread_id(next_thread_id);
     arm::switch_thread(
