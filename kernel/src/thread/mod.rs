@@ -114,13 +114,14 @@ pub fn create_thread(
 
             let mut spsr : u32 = 0;
 
+            spsr |= 1 << 0;     // Dunno what this does..
             spsr |= 1 << 2;     // .M[3:2] = 0b100 -->  Return to EL1
-            //spsr |= 1 << 6;     // FIQ masked
+            spsr |= 1 << 6;     // FIQ masked
             spsr |= 1 << 7;     // IRQ masked
             spsr |= 1 << 8;     // SError (System Error) masked
-            spsr |= 1 << 9; 
+            spsr |= 1 << 9;
 
-            frame.tf_spsr = spsr; 
+            frame.tf_spsr = spsr;
         })
 }
 

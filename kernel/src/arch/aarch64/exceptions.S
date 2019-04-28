@@ -96,11 +96,11 @@
 
 	ldr	x10, [x0, #(TF_ELR)]
   msr	elr_el1, x10
-	
+
   mov x11, xzr
   mov x12, xzr
 	ldp	w11, w12, [x0, #(TF_SPSR)]
-  
+
 	msr	spsr_el1, x11
 	msr	esr_el1, x12
 
@@ -117,25 +117,25 @@
 	ldp	x6,  x7,  [x0, #(TF_X + 6  * 8)]
 	ldp	x4,  x5,  [x0, #(TF_X + 4  * 8)]
 	ldp	x2,  x3,  [x0, #(TF_X + 2  * 8)]
-	
+
   ldp	x18, x30, [x0, #(TF_SP)]
 
 .if \el == 0
   msr sp_el0, x18
 .else
-  msr sp_el0, x18
-//  mov sp, x18
+//  msr sp_el0, x18
+  mov sp, x18
 .endif
-	
+
   ldp	x18, x19, [x0, #(TF_X + 18 * 8)]
   ldp	x0,  x1,  [x0, #(TF_X + 0  * 8)]
- 
+
 .endm
 
 
   .global _resume_process
 _resume_process:
-  restore_frame 1  
+  restore_frame 1
   //mov x18, 0xFFFF
   //msr sp_el0, x18
   eret
@@ -149,16 +149,16 @@ _enter_userspace:
   //MSR SPSel, #0
   //mov x10, 0xB00B
   //msr elr_el1, x10
-  
+
   //Enter EL0
   //---------
 
   //ensure elr will be "restored" to the entered_0
   //adr x10, entered_0
   //str	x10, [x0, #(TF_ELR)]
-  
+
   restore_frame 0
-  
+
   eret
 
 entered_0:
@@ -169,9 +169,9 @@ entered_0:
   b exit
 
 ENTRY(handle_el1h_sync)
-  
+
   MSR SPSel, #1 // SP_ELn
-	
+
   save_registers 1
 	//ldr	x0, [x18, #PC_CURTHREAD]
 	mov	x0, sp
@@ -184,7 +184,7 @@ END(handle_el1h_sync)
 ENTRY(handle_el0_sync)
   // HACK for making SP work (For now TODO: Fix)
   MSR SPSel, #1 // SP_ELn
-	
+
   save_registers 0
 	//ldr	x0, [x18, #PC_CURTHREAD]
 	mov	x0, sp
@@ -251,7 +251,7 @@ _vectors_disable:
   // Current EL with SP0
   //-------------------------------------
 
-  // synchronous 
+  // synchronous
   .align  7
   mov     x0, #0
   mrs     x1, esr_el1
@@ -338,7 +338,7 @@ _vectors_disable:
   //TODO: Support for context kernel stack?
   MSR SPSel, #0
 
-  //TODO: Clean up this "syscall" specific code  
+  //TODO: Clean up this "syscall" specific code
   sub	sp, sp, #0x20
   str	x30, [sp, #16]
 
@@ -353,7 +353,7 @@ _vectors_disable:
   // mrs     x3, spsr_el1
   // mrs     x4, far_el1
 
-  
+
   eret
 
   // IRQ
