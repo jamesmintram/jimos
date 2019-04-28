@@ -19,17 +19,17 @@ pub fn boot_root_process (mut process: process::Process ) {
         //spsr |= 1 << 6;     // FIQ masked
         //spsr |= 1 << 7;     // IRQ masked
         //spsr |= 1 << 8;     // SError (System Error) masked
-        spsr |= 1 << 9; 
-        
-        frame.tf_spsr = spsr; 
+        spsr |= 1 << 9;
+
+        frame.tf_spsr = spsr;
     }
 
     //register PID with scheduler
     process::switch_process(&mut process);
 
     println!("Everything set - starting root_process");
-    
-    process::resume_current_process();
+
+    // process::resume_current_process();
     //arm::eret();
 }
 
@@ -56,7 +56,7 @@ fn root_process() {
 
     // //Load elf
     // let elf = elf::Elf::from_data(&slice).ok().unwrap();
-    
+
     // let mut process2 = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
     // process2.exec(&elf);
 }

@@ -153,11 +153,11 @@ impl<'a> Process<'a>
     }
 }
 
-pub fn resume_current_process()
-{
-    println!("Resuming process");
-    arm::resume_process(&get_current_process().frame);
-}
+// pub fn resume_current_process()
+// {
+//     println!("Resuming process");
+//     arm::resume_process(&get_current_process().frame);
+// }
 
 pub fn return_to_userspace()
 {
@@ -177,7 +177,7 @@ pub fn switch_process(next_process: &mut Process)
     println!("Switching process");
     //Set the thread pointer to this
     let process_ptr = (next_process as *const _) as usize;
-    arm::set_thread_ptr(process_ptr);
+    // arm::set_thread_ptr(process_ptr);
 
     //Switch the page table
     memory::activate_address_space(&next_process.address_space);
@@ -186,7 +186,7 @@ pub fn switch_process(next_process: &mut Process)
 //TODO: Fix lifetime hack
 pub fn get_current_process() -> &'static mut Process<'static>
 {
-    let process_ptr_value = arm::get_thread_ptr();
+    let process_ptr_value = arm::get_thread_id();
     let process_ptr = process_ptr_value as *mut Process;
 
     //TODO: We need to validate this process address (Debug only maybe?)

@@ -33,29 +33,29 @@ impl ThreadSystem {
         where F: Fn(&mut Thread) -> ()
     {
         let mut new_thread: Thread = Default::default();
-        
+
         let kern_stack_frame = memory::kalloc::alloc_frame();
         let kernel_stack = memory::physical_to_kernel(kern_stack_frame.start_address());
 
         //TODO: Check we have been able to create required resources - if not, early return
 
-        self.current_id += 1;        
+        self.current_id += 1;
 
         new_thread.id = self.current_id;
         new_thread.kernel_stack = kernel_stack;
 
         //NOTE: Could fail? If so, return invalid ThreadId + free resources
         init(&mut new_thread);
-        
+
         self.threads.insert(new_thread.id, new_thread);
         self.current_id
     }
 
-    pub fn update<F>(&mut self, thread_id: ThreadId, update_fn: F) 
+    pub fn update<F>(&mut self, thread_id: ThreadId, update_fn: F)
         where F: Fn(&mut Thread) -> ()
     {
         //TODO: Check docks + match
-        if let Some(mut current_thread) = self.threads.get_mut(&thread_id) 
+        if let Some(mut current_thread) = self.threads.get_mut(&thread_id)
         {
             update_fn(&mut current_thread);
         }
@@ -66,7 +66,7 @@ impl ThreadSystem {
     }
 
     fn get(&self, thread_id: ThreadId) -> Option<&Thread> {
-        self.threads.get(&thread_id) 
+        self.threads.get(&thread_id)
     }
 }
 
@@ -90,8 +90,8 @@ pub type ThreadFn = fn(param: u64) -> ();
 
 
 pub fn create_thread(
-    thread_fn: ThreadFn, 
-    trampoline: Option<Trampoline>) -> ThreadId 
+    thread_fn: ThreadFn,
+    trampoline: Option<Trampoline>) -> ThreadId
 {
     let trampoline_fn = match trampoline {
         Some(func) => func,
@@ -136,19 +136,19 @@ pub fn start_thread(thread_id: ThreadId) {
 }
 
 fn default_trampoline(fn_ptr: u64, fn_param: u64) {
-    // println!("Tramampoline\n");    
+    // println!("Tramampoline\n");
     // println!("fn    {:X}", fn_ptr);
     // println!("Param {}", fn_param);
 
 
     //TODO: This is a hack mess
-    let func_ptr_ptr = &fn_ptr as *const u64 as usize; 
+    let func_ptr_ptr = &fn_ptr as *const u64 as usize;
     let func = func_ptr_ptr as *const ThreadFn;
 
     unsafe {
         (*func)(fn_param);
     }
-    
+
     println!("Trampoline end");
 
     scheduler::switch_to_next();
@@ -156,11 +156,41 @@ fn default_trampoline(fn_ptr: u64, fn_param: u64) {
     panic!("Fallen through a trampoline switchback");
 }
 
-pub fn resume(thread_id: ThreadId) {
-    println!("Thread resume");
+//-------------------------
+
+pub fn get_thread_id()  -> usize
+{
+    arm::get_thread_id()
+}
+
+pub fn get_thread_frame(thread_id: ThreadId) -> usize {
     if let Some(thread) = thread_sys().get(thread_id) {
-        arm::resume_process(&thread.frame);
+        let frame_ptr = &thread.frame as *const _ as usize;
+        frame_ptr
     } else {
-        panic!("Thread not found: {0}", thread_id);
+        panic!("Invalid thread id: {}", thread_id)
     }
+}
+
+pub fn switch_to(next_thread_id: ThreadId) {
+    let current_thread_id = get_thread_id();
+
+    let current_thread_frame_addr = get_thread_frame(current_thread_id);
+    let next_thread_frame_addr = get_thread_frame(next_thread_id);
+
+     println!("ResumeProcess:current_addr {:X}", current_thread_frame_addr);
+     println!("ResumeProcess:frame_addr {:X}", next_thread_frame_addr);
+
+    if current_thread_frame_addr == next_thread_frame_addr {
+        let current_thread_id = get_thread_id();
+        panic!(
+            "Attempting to switch to the current thread: {} :: {:X}",
+            current_thread_id,
+            current_thread_frame_addr);
+    }
+
+    arm::set_thread_id(next_thread_id);
+    arm::switch_thread(
+        current_thread_frame_addr,
+        next_thread_frame_addr);
 }

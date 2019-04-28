@@ -73,6 +73,6 @@ pub fn switch_to_next() {
     let next_thread = sched_sys_mut().switch_to_next();
 
     //This is split apart to prevent deadlocking the scheduler
-    arm::set_thread_ptr(next_thread);
-    thread::resume(next_thread);
+    // arm::set_thread_ptr(next_thread);
+    thread::switch_to(next_thread);
 }

@@ -1,6 +1,7 @@
 use super::frame::TrapFrame;
 use arch::aarch64::arm;
 
+use thread;
 
 pub fn read_far_el1() -> u64
 {
@@ -11,7 +12,7 @@ pub fn read_far_el1() -> u64
     val
 }
 
-pub fn set_thread_ptr(ptr_value: usize)
+pub fn set_thread_id(ptr_value: usize)
 {
     unsafe {
         asm!("
@@ -25,35 +26,33 @@ pub fn set_thread_ptr(ptr_value: usize)
     };
 }
 
-pub fn get_thread_ptr()  -> usize
-{
-    let ptr_value: usize;
+pub fn get_thread_id() -> thread::ThreadId {
+    let thread_id: usize;
 
     unsafe {
-        asm!("mrs $0, tpidr_el1": "=&r" (ptr_value):);
+        asm!("mrs $0, tpidr_el1": "=&r" (thread_id):);
     };
 
-    ptr_value
+    thread_id
 }
 
-pub fn resume_process(frame: &TrapFrame)
+pub fn switch_thread(current_thread_addr: usize, next_thread_addr: usize)
 {
     /*
 	 * Ensure compiler barrier, otherwise the monitor clear might
 	 * occur too late for us ?
 	 */
-     let _frame_ptr = frame as *const TrapFrame;
-     println!("ResumeProcess:frame_ptr {:X}", _frame_ptr as usize);
-    //  arm::dump_frame(&*frame);
 
     unsafe { asm!("
             mov x0, $0
+            mov x1, $0
             b _resume_process
         "
         :
-        : "r"(frame)
+        : "r"(next_thread_addr)
+        , "r"(current_thread_addr)
         :
-        );
+        );  //TODO: Need to ensure CLOBBERS are working
     };
 }
 
