@@ -96,6 +96,9 @@ pub unsafe extern "C" fn kmain()
     let idle_thread = thread::create_thread(thread::idle::idle2, None);
     thread::start_thread(idle_thread);
 
+    let idle_thread = thread::create_thread(thread::idle::idle3, None);
+    thread::start_thread(idle_thread);
+
     //TODO: We could create some more threads
 
 
