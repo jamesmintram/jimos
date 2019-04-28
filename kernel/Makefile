@@ -23,7 +23,7 @@ BUILD_DIR := build
 KERNEL := $(BUILD_DIR)/$(RUST_BINARY)
 RUST_LIB := $(BUILD_DIR)/$(RUST_BINARY).a
 
-.PHONY: all clean check
+.PHONY:
 
 VPATH = arch/aarch64
 
@@ -36,11 +36,11 @@ check:
 
 $(RUST_DEBUG_LIB): $(RUST_DEPS)
 	@echo "+ Building $@ [xargo]"
-	@$(XARGO) build --target=$(TARGET)
+	@$(XARGO) build --target=$(TARGET) --features "local_crates"
 
 $(RUST_RELEASE_LIB): $(RUST_DEPS)
 	@echo "+ Building $@ [xargo --release]"
-	@$(XARGO) build --release --target=$(TARGET)
+	@$(XARGO) build --release --target=$(TARGET) --features "local_crates"
 
 ifeq ($(DEBUG),1)
 $(RUST_LIB): $(RUST_DEBUG_LIB) | $(BUILD_DIR)
@@ -116,13 +116,16 @@ TIME_STAMP := `/bin/date "+%Y-%m-%d_%H-%M-%S"`
 rund: all
 	qemu-system-aarch64 -s -S -d int $(QEMU_SHARED_FLAGS) $(LOAD_KERNEL) $(LOAD_ELF)
 
-runi: all 
+runi: all
 	qemu-system-aarch64 -d int $(QEMU_SHARED_FLAGS) $(LOAD_KERNEL) $(LOAD_ELF)
 
-run: all 
-	qemu-system-aarch64 $(QEMU_SHARED_FLAGS) $(LOAD_KERNEL) $(LOAD_ELF) 
+run: all
+	qemu-system-aarch64 $(QEMU_SHARED_FLAGS) $(LOAD_KERNEL) $(LOAD_ELF)
 
 
 run_dump: all
 	mkdir -p dumps
 	qemu-system-aarch64 $(QEMU_SHARED_FLAGS) $(LOAD_KERNEL) $(LOAD_ELF)  &> dumps/kernel_run_$(TIME_STAMP).dump
+
+gdb: .PHONY
+	aarch64-linux-gnu-gdb -x gdb/qemu_attach.gdb

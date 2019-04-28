@@ -61,7 +61,7 @@ fn fault_stage_from_u32(stage: u32) -> FaultStage {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct FaultInfo { 
+pub struct FaultInfo {
     code: FaultStatusCode,
     stage: FaultStage,
 }
@@ -79,7 +79,7 @@ fn fault_info_from_esr(esr: u32) -> FaultInfo {
     FaultInfo{
         code: fault_status_code_from_u32(code),
         stage: fault_stage_from_u32(stage),
-    }   
+    }
 }
 
 
@@ -95,7 +95,7 @@ pub enum Exception {
     INSN_ABORT = 0x21,  /* Instruction abort, from same EL */
     PC_ALIGN = 0x22,    /* PC alignment fault */
     DATA_ABORT_L = 0x24,/* Data abort, from lower EL */
-    DATA_ABORT = 0x25,  /* Data abort, from same EL */ 
+    DATA_ABORT = 0x25,  /* Data abort, from same EL */
     SP_ALIGN = 0x26,    /* SP slignment fault */
     TRAP_FP = 0x2c,     /* Trapped FP exception */
     SERROR = 0x2f,      /* SError interrupt */
@@ -133,9 +133,9 @@ fn exception_from_esr(esr: u32) -> Exception {
 }
 
 fn data_abort(
-    frame: &frame::TrapFrame, 
-    process: &mut process::Process, 
-    far: u64, 
+    frame: &frame::TrapFrame,
+    process: &mut process::Process,
+    far: u64,
     low: bool)
 {
     /*
@@ -150,7 +150,7 @@ fn data_abort(
     //TODO: Temporary, this will need changing when there are legitimate
     //      reasons - ie COW
     if status.code == FaultStatusCode::PERM_FAULT
-        || status.code == FaultStatusCode::ACCESS_FAULT 
+        || status.code == FaultStatusCode::ACCESS_FAULT
     {
         panic!("ACCESS_FAULT");
     }
@@ -162,10 +162,10 @@ fn data_abort(
             virtual_address::VirtualAddress::User(addr) => {
                 println!(
                     "Fault address: {:?}",
-                    address); 
+                    address);
 
                 if process.address_space.handle_fault(addr) == false {
-                    if low 
+                    if low
                     {
                         panic!("Process SEGFAULT");
                         //TODO: Handle a process segfault
@@ -181,20 +181,20 @@ fn data_abort(
                     {
                         panic!("Unable to satisfy kernel page fault");
                     }
-                    
+
                 }
                 arm::flush_tlb();
             },
 
             virtual_address::VirtualAddress::Kernel(_addr) => {
                 println!(
-                    "Kernel Page Fault: 0x{:X}", far);    
-                panic!("Unkown address");    
+                    "Kernel Page Fault: 0x{:X}", far);
+                panic!("Unkown address");
             },
-        } 
+        }
     } else {
         println!(
-            "Invalid address: 0x{:X}\n", far);    
+            "Invalid address: 0x{:X}\n", far);
             panic!("Unkown address");
     }
 
@@ -215,14 +215,14 @@ pub unsafe extern "C" fn do_el1h_sync(
         //TODO: Match on all data aborts
         Exception::DATA_ABORT => {
             let far = arm::read_far_el1();
-            data_abort(frame, process, far, false);            
+            data_abort(frame, process, far, false);
         },
         Exception::DATA_ABORT_L => {
             let far = arm::read_far_el1();
-            data_abort(frame, process, far, true);            
+            data_abort(frame, process, far, true);
         },
         _ => {
-            arm::dump_frame(&*frame_ptr);
+            // arm::dump_frame(&*frame_ptr);
             panic!("Unhandled Exception: {:?}", exception);
         }
     }
@@ -249,15 +249,15 @@ pub unsafe extern "C" fn do_el0_sync(
         //TODO: Match on all data aborts
         Exception::DATA_ABORT => {
             let far = arm::read_far_el1();
-            data_abort(frame, process, far, false);            
+            data_abort(frame, process, far, false);
         },
         Exception::DATA_ABORT_L => {
             let far = arm::read_far_el1();
-            data_abort(frame, process, far, true);            
+            data_abort(frame, process, far, true);
         },
         Exception::INSN_ABORT_L => {
             let far = arm::read_far_el1();
-            data_abort(frame, process, far, true);            
+            data_abort(frame, process, far, true);
         },
         Exception::SVC64 => {
             panic!("Handle a service call here");

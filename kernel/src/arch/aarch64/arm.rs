@@ -11,7 +11,7 @@ pub fn read_far_el1() -> u64
     val
 }
 
-pub fn set_thread_ptr(ptr_value: usize) 
+pub fn set_thread_ptr(ptr_value: usize)
 {
     unsafe {
         asm!("
@@ -20,7 +20,7 @@ pub fn set_thread_ptr(ptr_value: usize)
         "
         :
         : "r"(ptr_value)
-        : 
+        :
         );
     };
 }

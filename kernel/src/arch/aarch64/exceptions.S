@@ -9,7 +9,7 @@
 
   /*
     --------------------------- SP + TF_SIZE + 16
-    x30     | Back trace 
+    x30     | Back trace
     x29     |
     --------------------------- SP + TF_SIZE
     TrapFrame

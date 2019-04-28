@@ -1,3 +1,23 @@
+TARGET = kernel
+
+UID=$(shell id -u)
+GID=$(shell id -g)
+
+ifeq ($(usedocker),1)
+	make_cmd = UID=$(UID) GID=$(GID) docker-compose -f docker-compose.yml run tools make -C /app/$(TARGET)
+	# make_cmd = docker-compose -f docker-compose.yml run tools make -C /app/$(TARGET)
+else
+	make_cmd = make -C ./$(TARGET)/
+endif
+
+.PHONY: kernel
+
+kernel:
+	$(make_cmd)
+
+docker-pull:
+	docker-compose pull
+
 ######################################
 
 QEMU_BIN = qemu-system-aarch64
@@ -15,10 +35,8 @@ TIME_STAMP := `/bin/date "+%Y-%m-%d_%H-%M-%S"`
 #
 # docker-compose build run make all
 #
-
-
-build:
-	cd kernel && make all
+#build:
+#	cd kernel && make all
 
 rund: build
 	qemu-system-aarch64 -s -S -d int $(QEMU_SHARED_FLAGS) $(LOAD_KERNEL) $(LOAD_ELF)
@@ -34,3 +52,5 @@ run_dump: build
 	mkdir -p dumps
 	qemu-system-aarch64 $(QEMU_SHARED_FLAGS) $(LOAD_KERNEL) $(LOAD_ELF)  &> dumps/kernel_run_$(TIME_STAMP).dump
 	
+
+

@@ -1,0 +1,7 @@
+version: '3'
+services:
+  tools:
+    image: "jamesmintram/jimos_toolchain:1"
+    volumes:
+        - ./:/app
+    user: "${UID}:${GID}"

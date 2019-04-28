@@ -5,14 +5,14 @@ use memory::address_space;
 use arch::aarch64::arm;
 use arch::aarch64::frame::TrapFrame;
 
-pub struct Process<'a> 
+pub struct Process<'a>
 {
     pub address_space: address_space::AddressSpace<'a>,
     pub heap: address_space::AddressSegmentId,
     pub stack: address_space::AddressSegmentId,
     pub text: address_space::AddressSegmentId,
 
-    
+
     // Context
     pub frame: TrapFrame,
     pub kernel_stack: memory::VirtualAddress,
@@ -33,16 +33,16 @@ pub struct Process<'a>
 pub const ONE_MB: usize = 0x10000;
 pub const ONE_GB: usize = 0x40000000;
 
-pub const DEFAULT_TEXT_BASE: usize = ONE_MB; 
-pub const DEFAULT_TEXT_SIZE: usize = 0; 
+pub const DEFAULT_TEXT_BASE: usize = ONE_MB;
+pub const DEFAULT_TEXT_SIZE: usize = 0;
 
-pub const DEFAULT_HEAP_BASE: usize = ONE_GB; 
-pub const DEFAULT_HEAP_SIZE: usize = ONE_MB * 32; 
-pub const DEFAULT_HEAP_MAX_SIZE: usize = ONE_GB * 8; 
+pub const DEFAULT_HEAP_BASE: usize = ONE_GB;
+pub const DEFAULT_HEAP_SIZE: usize = ONE_MB * 32;
+pub const DEFAULT_HEAP_MAX_SIZE: usize = ONE_GB * 8;
 
-pub const DEFAULT_STACK_BASE: usize = ONE_GB * 32; 
-pub const DEFAULT_STACK_SIZE: usize = ONE_MB; 
-pub const DEFAULT_STACK_MAX_SIZE: usize = ONE_MB * 8; 
+pub const DEFAULT_STACK_BASE: usize = ONE_GB * 32;
+pub const DEFAULT_STACK_SIZE: usize = ONE_MB * 2;
+pub const DEFAULT_STACK_MAX_SIZE: usize = ONE_MB * 8;
 
 impl<'a> Process<'a>
 {
@@ -52,8 +52,8 @@ impl<'a> Process<'a>
             TODO: Add Result type to this and plenty of ?
             Enforce Range: Start < End
         */
-        let mut new_as = address_space::AddressSpace::new();    
-        
+        let mut new_as = address_space::AddressSpace::new();
+
         let heap_desc = address_space::AddressSegmentDesc{
             range: address_space::AddressRange{start: DEFAULT_HEAP_BASE, end: DEFAULT_HEAP_BASE + DEFAULT_HEAP_SIZE},
         };
@@ -102,7 +102,7 @@ impl<'a> Process<'a>
         //TODO: Reset the text segment size to the image size
         //TODO: Pre-fault the whole text segment
         //TODO: Copy the executable image into the text area
-        
+
 
         for section in elf.sections_iter()
         {
@@ -115,11 +115,11 @@ impl<'a> Process<'a>
                     unsafe {
                         *dest.offset(i as isize) = data[i];
                     }
-                    
+
                 }
             }
         }
-    
+
 
         //TODO(Later): Reset the HEAP segment (release all physical pages)
         //TODO(Later): Release all of the text segments physical pages
@@ -140,10 +140,10 @@ impl<'a> Process<'a>
         spsr |= 1 << 6;     // FIQ masked
         spsr |= 1 << 7;     // IRQ masked
         spsr |= 1 << 8;     // SError (System Error) masked
-        spsr |= 1 << 9; 
-        
-        frame.tf_spsr = spsr; 
-        
+        spsr |= 1 << 9;
+
+        frame.tf_spsr = spsr;
+
         println!("Everything set");
         //Spsr
         //esr
@@ -172,14 +172,14 @@ pub fn return_to_userspace()
     //unsafe {(*ep)()};
 }
 
-pub fn switch_process(next_process: &mut Process) 
+pub fn switch_process(next_process: &mut Process)
 {
     println!("Switching process");
     //Set the thread pointer to this
     let process_ptr = (next_process as *const _) as usize;
     arm::set_thread_ptr(process_ptr);
 
-    //Switch the page table 
+    //Switch the page table
     memory::activate_address_space(&next_process.address_space);
 }
 

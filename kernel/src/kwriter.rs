@@ -7,7 +7,7 @@ pub const WRITER: Writer = Writer{};
 pub struct Writer {
 
 }
-
+ 
 impl fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         for byte in s.bytes() {
