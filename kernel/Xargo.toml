@@ -2,5 +2,11 @@
 core = {}
 
 
+[target.aarch64-none-elf.dependencies]
+alloc = {}
+
+[target.aarch64-unknown-freebsd.dependencies]
+alloc = {}
+
 [target.aarch64-linux-gnu.dependencies]
 alloc = {}
