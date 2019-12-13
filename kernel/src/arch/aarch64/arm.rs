@@ -65,7 +65,8 @@ pub fn switch_thread(current_thread_addr: usize, next_thread_addr: usize)
     unsafe { asm!("
             mov x0, $0
             mov x1, $1
-            b _resume_process
+            bl _ctx_switch
+            // Need to write x0 into an output variable
         "
         :
         : "r"(current_thread_addr)

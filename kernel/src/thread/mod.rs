@@ -35,14 +35,16 @@ impl ThreadSystem {
         let mut new_thread: Thread = Default::default();
 
         let kern_stack_frame = memory::kalloc::alloc_frame();
-        let kernel_stack = memory::physical_to_kernel(kern_stack_frame.start_address());
+        let kernel_stack_bottom = memory::physical_to_kernel(kern_stack_frame.start_address());
+        let kernel_stack_top = memory::physical_to_kernel(kern_stack_frame.end_address());
+
 
         //TODO: Check we have been able to create required resources - if not, early return
 
         self.current_id += 1;
 
         new_thread.id = self.current_id;
-        new_thread.kernel_stack = kernel_stack;
+        new_thread.kernel_stack = kernel_stack_top;
 
         //NOTE: Could fail? If so, return invalid ThreadId + free resources
         init(&mut new_thread);
@@ -107,24 +109,21 @@ pub fn create_thread(
             // is correctly set.
 
             // TODO: Update when using process AS - get the physical address of SP and convert it to a kernel address
+
             let frame_ptr = new_thread.kernel_stack as usize as *mut TrapFrame;
             let frame_ptr = unsafe {frame_ptr.offset(-1)};
-
             let frame = unsafe {&mut *frame_ptr};
 
-            //Create a local frame pointer from SP
-            //SP -= sizeof(Frame)
-
-            //Setup parameter to tramampoline
             // X0 - thread func
             frame.tf_x[0] = thread_fn as u64;
             // X1 - thread parameter
             frame.tf_x[1] = 0xBEEF;
 
-            frame.tf_sp = new_thread.kernel_stack as u64;//stack_range.end as u64;
-            frame.tf_elr = trampoline_fn as u64;
+            frame.tf_elr = 0;
             frame.tf_lr = trampoline_fn as u64;//text_range.start as u64;
 
+
+            // TODO: Needed to set initial state, not sure about where this should live
             let mut spsr : u32 = 0;
 
             spsr |= 1 << 0;     // Dunno what this does..
@@ -162,11 +161,11 @@ fn default_trampoline(fn_ptr: u64, fn_param: u64) {
         (*func)(fn_param);
     }
 
-    println!("Trampoline end");
+    // println!("Trampoline end");
 
     scheduler::switch_to_next();
 
-    panic!("Fallen through a trampoline switchback");
+    // panic!("Fallen through a trampoline switchback");
 }
 
 //-------------------------
@@ -177,6 +176,7 @@ pub fn get_thread_id()  -> usize
 }
 
 pub fn get_thread_frame(thread_id: ThreadId) -> usize {
+    //TODO: This is broken, should work with stacking
     if let Some(thread) = thread_sys().get(thread_id) {
 
         let frame_ptr = thread.kernel_stack as usize as *mut TrapFrame;
@@ -203,19 +203,20 @@ pub fn switch_to(next_thread_id: ThreadId) {
     let current_thread_frame_addr = get_thread_frame(current_thread_id);
     let next_thread_frame_addr = get_thread_frame(next_thread_id);
 
-     println!("ResumeProcess:current_addr {:X}", current_thread_frame_addr);
-     println!("ResumeProcess:frame_addr {:X}", next_thread_frame_addr);
+    println!("ResumeProcess:current_addr {:X}", current_thread_frame_addr);
+    println!("ResumeProcess:next_addr {:X}", next_thread_frame_addr);
 
     arm::set_thread_id(next_thread_id);
     arm::switch_thread(
-        current_thread_frame_addr,
-        next_thread_frame_addr);
+       current_thread_frame_addr,
+       next_thread_frame_addr);
 }
 
 pub fn switch_to_initial(next_thread_id: ThreadId) {
     let next_thread_frame_addr = get_thread_frame(next_thread_id);
 
-    println!("ResumeProcess:frame_addr {:X}", next_thread_frame_addr);
+    println!("Switch initial");
+    println!("SwitchToInitialProcess:frame_addr {:X}", next_thread_frame_addr);
 
     arm::set_thread_id(next_thread_id);
     arm::switch_to_initial(

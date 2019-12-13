@@ -89,6 +89,9 @@ impl Frame {
     pub fn start_address(&self) -> PhysicalAddress {
         self.number << PAGE_SHIFT
     }
+    pub fn end_address(&self) -> PhysicalAddress {
+        ((self.number + 1) << PAGE_SHIFT) -1
+    }
 }
 
 

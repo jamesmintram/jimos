@@ -46,6 +46,49 @@
 
 
 
+
+
+.macro	restore_registers_initial el
+  //x0 - points to the start of the TrapFrame struct
+
+	ldr	x10, [x0, #(TF_ELR)]
+  msr	elr_el1, x10
+
+  mov x11, xzr
+  mov x12, xzr
+	ldp	w11, w12, [x0, #(TF_SPSR)]
+
+	msr	spsr_el1, x11
+	msr	esr_el1, x12
+
+	ldp	x28, x29, [x0, #(TF_X + 28 * 8)]
+	ldp	x26, x27, [x0, #(TF_X + 26 * 8)]
+	ldp	x24, x25, [x0, #(TF_X + 24 * 8)]
+	ldp	x22, x23, [x0, #(TF_X + 22 * 8)]
+	ldp	x20, x21, [x0, #(TF_X + 20 * 8)]
+	ldp	x16, x17, [x0, #(TF_X + 16 * 8)]
+	ldp	x14, x15, [x0, #(TF_X + 14 * 8)]
+	ldp	x12, x13, [x0, #(TF_X + 12 * 8)]
+	ldp	x10, x11, [x0, #(TF_X + 10 * 8)]
+	ldp	x8,  x9,  [x0, #(TF_X + 8  * 8)]
+	ldp	x6,  x7,  [x0, #(TF_X + 6  * 8)]
+	ldp	x4,  x5,  [x0, #(TF_X + 4  * 8)]
+	ldp	x2,  x3,  [x0, #(TF_X + 2  * 8)]
+
+  ldp	x18, x30, [x0, #(TF_SP)]
+
+.if \el == 0
+  msr sp_el0, x18
+.else
+  mov sp, x18
+.endif
+	
+
+  ldp	x18, x19, [x0, #(TF_X + 18 * 8)]
+  ldp	x0,  x1,  [x0, #(TF_X + 0  * 8)]
+.endm
+
+
 .macro	save_registers el
 
   /*
@@ -94,6 +137,7 @@
 .macro	restore_registers el
   //x0 - points to the start of the TrapFrame struct
 
+  sub	x0, x0, #(TF_SIZE)
 	ldr	x10, [x0, #(TF_ELR)]
   msr	elr_el1, x10
 
@@ -118,58 +162,103 @@
 	ldp	x4,  x5,  [x0, #(TF_X + 4  * 8)]
 	ldp	x2,  x3,  [x0, #(TF_X + 2  * 8)]
 
-  ldp	x18, x30, [x0, #(TF_SP)]
-
-.if \el == 0
-  msr sp_el0, x18
-.else
-  mov sp, x18
-.endif
-
   ldp	x18, x19, [x0, #(TF_X + 18 * 8)]
   ldp	x0,  x1,  [x0, #(TF_X + 0  * 8)]
+
+  add	sp, sp, #(TF_SIZE + 16)
 .endm
 
 
+//-------------------------------------------------------
 
-.macro	switch_frame el
-  // X0 = pointer to current thread frame
-  // X1 = pointer to the next thread frame
 
-  save_registers el
+.macro	ctx_switch_save_registers el
+	sub	sp, sp, #(TF_SIZE)
+	
+  //TODO: User a different darta struct for ctx_switch
+  str	x30, [sp, #(TF_LR)]
 
-  // Update thread context with new SP?
+	stp	x28, x29, [sp, #(TF_X + 28 * 8)]
+	stp	x26, x27, [sp, #(TF_X + 26 * 8)]
+	stp	x24, x25, [sp, #(TF_X + 24 * 8)]
+  stp	x22, x23, [sp, #(TF_X + 22 * 8)]
+	stp	x20, x21, [sp, #(TF_X + 20 * 8)]
+	stp	x18, x19, [sp, #(TF_X + 18 * 8)]
+	stp	x16, x17, [sp, #(TF_X + 16 * 8)]
+	stp	x14, x15, [sp, #(TF_X + 14 * 8)]
+	stp	x12, x13, [sp, #(TF_X + 12 * 8)]
+	stp	x10, x11, [sp, #(TF_X + 10 * 8)]
+	stp	x8,  x9,  [sp, #(TF_X + 8  * 8)]
+	stp	x6,  x7,  [sp, #(TF_X + 6  * 8)]
+	stp	x4,  x5,  [sp, #(TF_X + 4  * 8)]
+	stp	x2,  x3,  [sp, #(TF_X + 2  * 8)]
+	stp	x0,  x1,  [sp, #(TF_X + 0  * 8)]
 
-  mov x0, x1
-  restore_registers el
+  //TODO: Store the ttib
+  //mrs  x19, tpidr_el0
+  //mrs  x20, tpidrro_el0
+  //stp x19, x20, [sp, #(TF_X + 0 * 8)] //TODO: NEW STRUCT!
 
-  ret
+  mov x0, sp
 .endm
 
+.macro	ctx_switch_restore_registers el
+  mov sp, x1
+
+  //ldp	x19, x20, [sp, #(TF_X + 0 * 8)] //TODO: NEW STRUCT!
+  //msr  tpidr_el0, x19
+  //msr  tpidrro_el0, x20
+
+  ldr	x30, [sp, #(TF_LR)]
+
+	ldp	x28, x29, [sp, #(TF_X + 28 * 8)]
+	ldp	x26, x27, [sp, #(TF_X + 26 * 8)]
+	ldp	x24, x25, [sp, #(TF_X + 24 * 8)]
+	ldp	x22, x23, [sp, #(TF_X + 22 * 8)]
+	ldp	x20, x21, [sp, #(TF_X + 20 * 8)]
+	ldp	x16, x17, [sp, #(TF_X + 16 * 8)]
+	ldp	x14, x15, [sp, #(TF_X + 14 * 8)]
+	ldp	x12, x13, [sp, #(TF_X + 12 * 8)]
+	ldp	x10, x11, [sp, #(TF_X + 10 * 8)]
+	ldp	x8,  x9,  [sp, #(TF_X + 8  * 8)]
+	ldp	x6,  x7,  [sp, #(TF_X + 6  * 8)]
+	ldp	x4,  x5,  [sp, #(TF_X + 4  * 8)]
+	ldp	x2,  x3,  [sp, #(TF_X + 2  * 8)]
+  ldp	x0,  x1,  [sp, #(TF_X + 0  * 8)]
+
+  add	sp, sp, #(TF_SIZE)
+.endm
 
   .global	_initial_thread_start
 _initial_thread_start:
   // X0 = pointer to the next thread frame
+  mov x1, x0
 
-  restore_registers 1
+	ldr	x10, [x1, #(TF_ELR)]
+  msr	elr_el1, x10
+
+  mov x11, xzr
+  mov x12, xzr
+	ldp	w11, w12, [x1, #(TF_SPSR)]
+
+	msr	spsr_el1, x11
+	msr	esr_el1, x12
+
+  ctx_switch_restore_registers
   ret
 
 
-  .global _resume_process
-_resume_process:
+.global _ctx_switch
+_ctx_switch:
   // X0 = pointer to current thread frame
   // X1 = pointer to the next thread frame
 
-  save_registers 1
-  mov x0, x1
-  restore_registers 1
+  clrex
+  ctx_switch_save_registers
+  ctx_switch_restore_registers
 
+  // X0 contains the new SP for the thread we just switched away from
   ret
-
-  //// Preconditions:
-  ////    X0 != X1
-  //switch_frame 1
-  //eret
 
 
 //TODO: This is currently written for the first time
