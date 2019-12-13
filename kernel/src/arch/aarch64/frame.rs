@@ -1,6 +1,7 @@
 
 #[allow(dead_code)]
 #[repr(packed)]
+#[derive(Clone, Copy)]
 pub struct TrapFrame {
     pub tf_sp:      u64,       //0
     pub tf_lr:      u64,       //8

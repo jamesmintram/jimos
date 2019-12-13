@@ -2,29 +2,33 @@ use arch::aarch64::arm;
 use arch::aarch64::frame::TrapFrame;
 
 use memory;
-use hashmap_core::HashMap;
 use spin::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use scheduler;
 
 pub mod idle;
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 struct Thread {
     pub frame: TrapFrame,
     pub id: ThreadId,
     pub kernel_stack: memory::VirtualAddress,
 
+    /*
+        Move stuff over from the Process module to here
+    */
+
 }
 
 struct ThreadSystem {
-    pub threads: HashMap<ThreadId, Thread>,
+    pub threads: [Thread;64],
     pub current_id: usize,
 }
 
 impl ThreadSystem {
     pub fn new() -> ThreadSystem {
+        //println!("New thread sys");
         return ThreadSystem {
-            threads: HashMap::new(),
+            threads: [Default::default();64],
             current_id: 0,
         }
     }
@@ -32,8 +36,6 @@ impl ThreadSystem {
     pub fn create<F>(&mut self, init: F) -> ThreadId
         where F: Fn(&mut Thread) -> ()
     {
-        let mut new_thread: Thread = Default::default();
-
         let kern_stack_frame = memory::kalloc::alloc_frame();
         let kernel_stack_bottom = memory::physical_to_kernel(kern_stack_frame.start_address());
         let kernel_stack_top = memory::physical_to_kernel(kern_stack_frame.end_address());
@@ -42,24 +44,27 @@ impl ThreadSystem {
         //TODO: Check we have been able to create required resources - if not, early return
 
         self.current_id += 1;
+        let new_thread_id = self.current_id;
 
-        new_thread.id = self.current_id;
-        new_thread.kernel_stack = kernel_stack_top;
+        if let Some(mut new_thread) = self.get_mut(self.current_id)
+        {
+            new_thread.id = new_thread_id;
+            new_thread.kernel_stack = kernel_stack_top;
 
-        //NOTE: Could fail? If so, return invalid ThreadId + free resources
-        init(&mut new_thread);
-
-        self.threads.insert(new_thread.id, new_thread);
-        self.current_id
+            //NOTE: Could fail? If so, return invalid ThreadId + free resources
+            init(&mut new_thread);
+        }
+        
+        new_thread_id
     }
 
     pub fn update<F>(&mut self, thread_id: ThreadId, update_fn: F)
         where F: Fn(&mut Thread) -> ()
     {
         //TODO: Check docks + match
-        if let Some(mut current_thread) = self.threads.get_mut(&thread_id)
+        if let Some(mut current_thread) = self.get_mut(thread_id)
         {
-            update_fn(&mut current_thread);
+            update_fn(&mut current_thread)
         }
         else
         {
@@ -67,8 +72,12 @@ impl ThreadSystem {
         }
     }
 
+    fn get_mut(&mut self, thread_id: ThreadId) -> Option<&mut Thread> {
+        Some(&mut self.threads[thread_id])
+    }
+
     fn get(&self, thread_id: ThreadId) -> Option<&Thread> {
-        self.threads.get(&thread_id)
+        Some(&self.threads[thread_id])
     }
 }
 
