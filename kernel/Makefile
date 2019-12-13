@@ -27,7 +27,7 @@ RUST_LIB := $(BUILD_DIR)/$(RUST_BINARY).a
 
 VPATH = arch/aarch64
 
-all: $(KERNEL).bin $(KERNEL).dump $(KERNEL).syms
+all: $(BUILD_DIR)/kernel8.img  $(KERNEL).bin $(KERNEL).dump $(KERNEL).syms
 
 head: $(BUILD_DIR)/head.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/crt0.o
 
@@ -96,6 +96,9 @@ $(KERNEL).dump: $(KERNEL).elf | $(BUILD_DIR)
 $(KERNEL).bin: $(KERNEL).elf | $(BUILD_DIR)
 	@echo "+ Building $@ [objcopy $<]"
 	@$(CROSS)-objcopy $< -O binary $@
+
+$(BUILD_DIR)/kernel8.img: $(KERNEL).bin
+	cp $< $@
 
 clean:
 	$(XARGO) clean

@@ -1,1 +1,5 @@
-aarch64-linux-gnu-gdb --command=qemu_attach.gdb
+
+#!/bin/bash
+
+aarch64-none-elf-gdb --command="$(dirname "$0")/jlink_attach.gdb"
+

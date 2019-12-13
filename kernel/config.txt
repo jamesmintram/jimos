@@ -1,0 +1,3 @@
+kernel_old=1
+boot_delay=0
+arm_64bit=1

@@ -24,6 +24,9 @@ __start_master:
   
   bl enable_jtag
 
+//__post_jtag:
+//  b __post_jtag
+
 
 //--------------------------------------------------------
 // Drop down to EL1

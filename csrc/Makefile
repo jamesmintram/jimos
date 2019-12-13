@@ -1,4 +1,4 @@
-TARGET ?= aarch64-linux-gnu
+TARGET ?= aarch64-none-elf
 CROSS ?= $(TARGET)
 
 CC := $(CROSS)-gcc
