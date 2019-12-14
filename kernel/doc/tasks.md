@@ -1,14 +1,21 @@
-Cleanup
-    Remove all of the Result warnings for printing
+See why I cannot create 128 thread blocks (memory crash)
+Refactor to thread model
 
-Process
-    Execute a process in EL0 that triggers an on demand page in
-        Demarcate a segment of special code to be copied as a process "image" using linkerscript trickery
-        
-        memcopy this segment into the correctly sized text segment
-        
-        execute this code via return_to_userspace
-        
+Threads should use their own address spaces
+- Switching thread should switch out page tables
+
+Re-test loading an elf + running QEMU
+- Bundle elf into the kernel image (So we can load it over ethernet)
+
+Drop process to EL0
+- Requires fixup of the exception handlers (Store/restore state)
+
+Switch thread from the C/Elf process
+- Requires a yield syscall
+
+
+
+
 Frame Allocator 
     Release
     Page management
