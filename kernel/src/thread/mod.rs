@@ -1,5 +1,5 @@
 use arch::aarch64::arm;
-use arch::aarch64::frame::TrapFrame;
+use arch::aarch64::frame::{TrapFrame, ArchThreadBlock};
 
 use memory;
 use spin::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
@@ -9,18 +9,17 @@ pub mod idle;
 
 #[derive(Default, Clone, Copy)]
 struct Thread {
-    pub frame: TrapFrame,
-    pub id: ThreadId,
+    pub id: usize,
+    pub arch_tb: ArchThreadBlock,
     pub kernel_stack: memory::VirtualAddress,
-
+    pub frame: TrapFrame,
     /*
         Move stuff over from the Process module to here
     */
-
 }
 
 struct ThreadSystem {
-    pub threads: [Thread;64],
+    pub threads: [Thread;16],
     pub current_id: usize,
 }
 
@@ -28,7 +27,7 @@ impl ThreadSystem {
     pub fn new() -> ThreadSystem {
         //println!("New thread sys");
         return ThreadSystem {
-            threads: [Default::default();64],
+            threads: [Default::default();16],
             current_id: 0,
         }
     }
@@ -53,6 +52,9 @@ impl ThreadSystem {
 
             //NOTE: Could fail? If so, return invalid ThreadId + free resources
             init(&mut new_thread);
+            println!("TCB:  {:X} {:?}", 
+                &new_thread.arch_tb as *const _ as usize, 
+                new_thread.arch_tb);
         }
         
         new_thread_id
@@ -131,6 +133,8 @@ pub fn create_thread(
             frame.tf_elr = 0;
             frame.tf_lr = trampoline_fn as u64;//text_range.start as u64;
 
+            new_thread.arch_tb.id = new_thread.id;
+            new_thread.arch_tb.sp = frame_ptr as usize;
 
             // TODO: Needed to set initial state, not sure about where this should live
             let mut spsr : u32 = 0;
@@ -161,6 +165,7 @@ fn default_trampoline(fn_ptr: u64, fn_param: u64) {
     // println!("fn    {:X}", fn_ptr);
     // println!("Param {}", fn_param);
 
+    println!("Trampoline thread: {}", get_thread_id());
 
     //TODO: This is a hack mess
     let func_ptr_ptr = &fn_ptr as *const u64 as usize;
@@ -174,25 +179,22 @@ fn default_trampoline(fn_ptr: u64, fn_param: u64) {
 
     scheduler::switch_to_next();
 
-    // panic!("Fallen through a trampoline switchback");
+    panic!("Fallen through a trampoline switchback");
 }
 
 //-------------------------
 
-pub fn get_thread_id()  -> usize
+pub fn get_thread_id() -> ThreadId
 {
-    arm::get_thread_id()
+    let arch_tb_ptr = arm::get_thread_id() as *mut ArchThreadBlock;
+    let arch_tb: &mut ArchThreadBlock = unsafe {&mut *arch_tb_ptr};
+    return arch_tb.id;
 }
 
-pub fn get_thread_frame(thread_id: ThreadId) -> usize {
-    //TODO: This is broken, should work with stacking
+fn get_thread_block_addr(thread_id: ThreadId) -> usize {
     if let Some(thread) = thread_sys().get(thread_id) {
-
-        let frame_ptr = thread.kernel_stack as usize as *mut TrapFrame;
-        let frame_ptr = unsafe {frame_ptr.offset(-1)};
-
-        // let frame_ptr = &thread.frame as *const _ as usize;
-        frame_ptr as usize
+        let thread_addr = (&thread.arch_tb as *const _) as usize;
+        thread_addr
     } else {
         panic!("Invalid thread id: {}", thread_id)
     }
@@ -209,25 +211,20 @@ pub fn switch_to(next_thread_id: ThreadId) {
             next_thread_id);
     }
 
-    let current_thread_frame_addr = get_thread_frame(current_thread_id);
-    let next_thread_frame_addr = get_thread_frame(next_thread_id);
-
-    println!("ResumeProcess:current_addr {:X}", current_thread_frame_addr);
-    println!("ResumeProcess:next_addr {:X}", next_thread_frame_addr);
-
-    arm::set_thread_id(next_thread_id);
+    let current_thread_block_addr = get_thread_block_addr(current_thread_id);
+    let next_thread_block_addr = get_thread_block_addr(next_thread_id);
+    
     arm::switch_thread(
-       current_thread_frame_addr,
-       next_thread_frame_addr);
+        current_thread_block_addr,
+        next_thread_block_addr);
 }
 
 pub fn switch_to_initial(next_thread_id: ThreadId) {
-    let next_thread_frame_addr = get_thread_frame(next_thread_id);
+    let next_thread_block_addr = get_thread_block_addr(next_thread_id);
 
     println!("Switch initial");
-    println!("SwitchToInitialProcess:frame_addr {:X}", next_thread_frame_addr);
+    println!("SwitchToInitialProcess:frame_addr {:X}", next_thread_block_addr);
 
-    arm::set_thread_id(next_thread_id);
     arm::switch_to_initial(
-        next_thread_frame_addr);
+        next_thread_block_addr);
 }

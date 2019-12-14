@@ -25,11 +25,12 @@ impl SchedulerSystem {
     }
 
     fn switch_to_next(&mut self) -> ThreadId {
+        let current_thread_id = thread::get_thread_id();
 
         //TODO: There is lots more we can do here respect to checking thread statuses
         //TODO: and priorities and other stuff
 
-        self.current_id = 1 + (self.current_id % self.max_id );
+        self.current_id = 1 + (current_thread_id % self.max_id);
         return self.current_id;
 
         //TODO: This will bottom out with ERET

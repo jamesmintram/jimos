@@ -198,12 +198,10 @@
   //mrs  x19, tpidr_el0
   //mrs  x20, tpidrro_el0
   //stp x19, x20, [sp, #(TF_X + 0 * 8)] //TODO: NEW STRUCT!
-
-  mov x0, sp
 .endm
 
 .macro	ctx_switch_restore_registers el
-  mov sp, x1
+  // Requires the SP already be set
 
   //ldp	x19, x20, [sp, #(TF_X + 0 * 8)] //TODO: NEW STRUCT!
   //msr  tpidr_el0, x19
@@ -229,12 +227,22 @@
   add	sp, sp, #(TF_SIZE)
 .endm
 
-  .global	_initial_thread_start
+.global	_initial_thread_start
 _initial_thread_start:
-  // X0 = pointer to the next thread frame
-  mov x1, x0
+  // X0 = pointer to the next thread block
 
-	ldr	x10, [x1, #(TF_ELR)]
+  // Switch the thread pointer to the next thread block
+  msr tpidr_el1, x0
+  //TODO: Memory or instruction barrier required?
+
+  // Switch page tables (TODO)
+
+  // Load the next thread's SP
+  ldr x18, [x0, TB_SP]
+  mov sp, x18
+
+  // Load system registers (TODO: This should move)
+	ldr	x10, [x0, #(TF_ELR)]
   msr	elr_el1, x10
 
   mov x11, xzr
@@ -250,14 +258,31 @@ _initial_thread_start:
 
 .global _ctx_switch
 _ctx_switch:
-  // X0 = pointer to current thread frame
-  // X1 = pointer to the next thread frame
-
+  // X0 = pointer to current thread block
+  // X1 = pointer to the next thread block
+  //NOTE: X0 and X1 must not be modified by save_registers
+  
   clrex
+  
   ctx_switch_save_registers
+  // X0 contains the new SP for the thread we just switched away from
+  
+  // Store the thread's SP value in it's thread block  
+  mov x18, sp
+  str x18, [x0, TB_SP]
+
+  // Switch the thread pointer to the next thread block
+  msr tpidr_el1, x1
+  
+  // Switch page tables
+
+  // Load the next thread's SP
+  ldr x18, [x1, TB_SP]
+  mov sp, x18
+
+  //Finally restore the registers
   ctx_switch_restore_registers
 
-  // X0 contains the new SP for the thread we just switched away from
   ret
 
 

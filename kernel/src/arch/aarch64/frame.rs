@@ -11,6 +11,13 @@ pub struct TrapFrame {
     pub tf_x:       [u64; 30], //32
 }
 
+#[allow(dead_code)]
+#[repr(packed)]
+#[derive(Clone, Copy, Default, Debug)]
+pub struct ArchThreadBlock {
+    pub id: usize,
+    pub sp: usize,
+}
 
 impl Default for TrapFrame {
     fn default() -> TrapFrame {

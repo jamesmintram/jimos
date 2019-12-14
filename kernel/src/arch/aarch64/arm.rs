@@ -12,20 +12,6 @@ pub fn read_far_el1() -> u64
     val
 }
 
-pub fn set_thread_id(ptr_value: usize)
-{
-    unsafe {
-        asm!("
-            mov	x18, $0
-            msr tpidr_el1, x18
-        "
-        :
-        : "r"(ptr_value)
-        :
-        );
-    };
-}
-
 pub fn get_thread_id() -> thread::ThreadId {
     let thread_id: usize;
 
@@ -48,6 +34,13 @@ pub fn switch_to_initial(first_thread_addr: usize) {
     }
 }
 
+#[derive(Copy,Clone)]
+pub struct SwitchResult
+{
+    pub id: usize,
+    pub sp: usize
+}
+
 pub fn switch_thread(current_thread_addr: usize, next_thread_addr: usize)
 {
     /*
@@ -65,14 +58,14 @@ pub fn switch_thread(current_thread_addr: usize, next_thread_addr: usize)
     unsafe { asm!("
             mov x0, $0
             mov x1, $1
+            
             bl _ctx_switch
-            // Need to write x0 into an output variable
         "
         :
         : "r"(current_thread_addr)
         , "r"(next_thread_addr)
-        :
-        );  //TODO: Need to ensure CLOBBERS are working
+        : "x0", "x1"
+        );
     };
 }
 
