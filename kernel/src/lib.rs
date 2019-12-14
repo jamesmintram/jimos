@@ -36,6 +36,7 @@ mod mailbox;
 mod panic;
 mod rootprocess;
 mod scheduler;
+mod reboot;
 
 mod test;
 
@@ -93,14 +94,16 @@ pub unsafe extern "C" fn kmain()
     //TODO: How are stacks managed for threads with no Process?
     //TODO: How do we pass in the function we want to run?
 
-    let thread1 = thread::create_thread(thread::idle::idle1, None);
-    thread::start_thread(thread1);
+    // let thread1 = thread::create_thread(thread::idle::idle1, None);
+    // thread::start_thread(thread1);
 
-    let thread2 = thread::create_thread(thread::idle::idle2, None);
-    thread::start_thread(thread2);
+    // let thread2 = thread::create_thread(thread::idle::idle2, None);
+    // thread::start_thread(thread2);
 
-    
-
+    for _x in 0..1000000000 as u64 {
+        asm!("nop" :::: "volatile"); 
+    }
+    reboot::reboot();
     // //TODO: This should be moved into a "thread context bring up" routine
     // arm::set_thread_id(idle_thread);
 
@@ -114,7 +117,7 @@ pub unsafe extern "C" fn kmain()
     //This will bottom out into a RET
     // scheduler::switch_to_next();
 
-    thread::switch_to_initial(thread1);
+    //thread::switch_to_initial(thread1);
 
     //let mut root_process = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
     //rootprocess::boot_root_process(root_process);
@@ -130,7 +133,7 @@ pub unsafe extern "C" fn kmain()
 
 
     println!("Exiting jimOS\n");
-    exit();
+    //exit();
 
         // match elf::Elf::from_data(&slice) {
     //     Err(err) => println!("ELF: {:#?}\n", err),

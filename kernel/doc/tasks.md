@@ -1,3 +1,4 @@
+Add a reboot handler inside of the panic FN - reset when P pressed
 See why I cannot create 128 thread blocks (memory crash)
 Refactor to thread model
 
