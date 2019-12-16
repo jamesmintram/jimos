@@ -16,6 +16,7 @@ extern crate bitflags;
 extern crate alloc;
 extern crate spin;
 extern crate elf;
+//extern crate hashmap_core;
 
 pub mod lang_items;
 
@@ -72,10 +73,69 @@ pub unsafe extern "C" fn kmain()
     arm::print_cache_info();
 
     println!("Building kernel page tables\n");
-    //println!("Kernel ends at {}\n", kernel_end_addr);
+    //TODO: Need to build a page table which is the same as what we generate in ASM
+    //0 - kernel_start           :: unmapped
+    //kernel_start -> bss start  :: read only
+    //bss_end -> bss_end +1      :: unmapped
+    //last 16MB                  :: PT_DEV + PT_OSH
 
+/*
+    //TODO: Enforce W^X using types?
+    //TODO: AS will create/update an ARCH specific page table
 
-    //TODO: Write protect the kernel image
+    new_as.add_segment(
+        address_space::AddressSegmentDesc{
+            range: address_space::AddressRange{
+                start: KERNEL_TEXT_START, 
+                end: KERNEL_TEXT_END,
+            },
+            perm:  X 
+            flags: NONE,
+            name: "Kernel Text"
+        },
+        address_space::AddressSegmentDesc{
+            range: address_space::AddressRange{
+                start: KERNEL_BSS_START, 
+                end: KERNEL_BSS_END
+            },
+            perm:  W
+            flags: NONE,
+            name: "Kernel BSS"
+        },
+
+        //Ensure there is a 1 page gap here to catch stack overrun
+
+        address_space::AddressSegmentDesc{
+            range: address_space::AddressRange{
+                start: KERNEL_STACK_START = KERNEL_BSS_END + 1 page, 
+                end: KERNEL_STACK_END
+            },
+            perm:  W
+            flags: NONE,
+            name: "Kernel Stack"
+        },
+
+        address_space::AddressSegmentDesc{
+            range: address_space::AddressRange{
+                start: DEFAULT_HEAP_BASE, 
+                end: DEFAULT_HEAP_BASE + DEFAULT_HEAP_SIZE
+            },
+            perm:  W no Exec //Means we cannot execute code in EL1 that lives in the heap 
+            flags: NONE,
+            name: "Kernel HEAP"
+        },
+        address_space::AddressSegmentDesc{
+            range: address_space::AddressRange{
+                start: 0x3F000000, 
+                end: 0x3FFFFFFF
+            },
+            perm:  W, 
+            flags: MMIO,
+            name: "MMIO"
+        },
+    }
+*/
+
     //TODO: Consider how rust allocs on the stack
     memory::init();
 
@@ -92,6 +152,7 @@ pub unsafe extern "C" fn kmain()
 
     //TODO: Create and schedule another thread
     //TODO: How are stacks managed for threads with no Process?
+
     //TODO: How do we pass in the function we want to run?
 
     let thread1 = thread::create_thread(thread::idle::idle1, None);

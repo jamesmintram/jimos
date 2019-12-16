@@ -54,22 +54,26 @@ pub static mut ANON_FRAME_ALLOCATOR: LockedAreaFrameAllocator = LockedAreaFrameA
 
 //static mut HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
 extern "C" {
-    static mut kernel_end: u8;
+    static mut __heap_phys_start: u8;
 }
 
 pub fn init() {
     //kernel_end comes from linker scripts
-    let kernel_end_addr =  unsafe{(&kernel_end as *const _) as usize};
+    //TODO: Read this into some sort of immutable system config that we can access
+    //TODO: Add the KernelBSS ranges to this system config
+    
+    let heap_start_addr =  unsafe{(&__heap_phys_start as *const _) as usize};
+
 
     // Initialise the heaps
-    let heap_start = kernel_end_addr + memory::KERNEL_ADDRESS_START;
+    let heap_start = heap_start_addr + memory::KERNEL_ADDRESS_START;
     let heap_end = heap_start + HEAP_SIZE;
     
     let anon_mem_start = heap_end;
     let anon_mem_end = anon_mem_start + HEAP_SIZE;
 
     unsafe {
-        KERNEL_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(kernel_end_addr, anon_mem_start));
+        KERNEL_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(heap_start_addr, anon_mem_start));
         ANON_FRAME_ALLOCATOR.init(memory::AreaFrameAllocator::new(anon_mem_start, anon_mem_end));
 
         ::HEAP_ALLOCATOR.init();

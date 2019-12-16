@@ -16,9 +16,9 @@ __start_ram:
   b		  __hang
 
 __start_master:
-  //Hacky - but we use the Page table space as a stack for now
-  adrp	x2, boot_end
-  add	  x2, x2, #:lo12:boot_end
+  // Use a chunk at the start of the heap for bootstrap stack
+  adrp	x2, __boot_stack  
+  add	  x2, x2, #:lo12:__boot_stack
 
   mov	  sp, x2
   
@@ -234,7 +234,11 @@ entered_1:
 
   cmp x21, x23                  // are we at end?
   b.le 1b
-//-----------------------------
+
+//Unmap the kernel stack guard page
+//  Calculate L3 + L4 page table indices for __kernel_stack_guard
+//  Update the entry and make it non-accessable
+//----------------------------------------------
 
 
 
