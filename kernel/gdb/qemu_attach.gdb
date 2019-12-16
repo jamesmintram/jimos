@@ -1,3 +1,5 @@
+set debug aarch64
+
 target remote localhost:1234
 file build/blinky.elf
 

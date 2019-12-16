@@ -313,6 +313,10 @@ entered_0:
   //therefore we need to make a syscall
   b exit
 
+ENTRY(handle_err_sync)
+  b exit
+END(handle_err_sync)
+
 ENTRY(handle_el1h_sync)
 
   MSR SPSel, #1 // SP_ELn
@@ -365,19 +369,19 @@ _vectors:
   vempty  //Synchronous EL1t
   vempty  //IRQ EL1t
   vempty  //FIQ EL1t
-  vempty  //Error EL1t
+  vector err_sync  //Error EL1t
 
   //TODO: Eventually we should use this
 
   vector el1h_sync  //Synchronous EL1h
   vempty  //IRQ EL1h
   vempty  //FIQ EL1h
-  vempty  //Error EL1h
+  vector err_sync  //Error EL1h
 
   vector el0_sync  //Synchronous 64bit EL0
   vempty  //IRQ 64bit EL0
   vempty  //FIQ 64bit EL0
-  vempty  //Error 64bit EL0
+  vector err_sync  //Error 64bit EL0
 
   vempty  //Synchronous 32bit EL0
   vempty  //IRQ 32bit EL0

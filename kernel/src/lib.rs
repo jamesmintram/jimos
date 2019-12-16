@@ -1,7 +1,6 @@
-#![feature(compiler_builtins_lib, lang_items, asm)]
+#![feature(lang_items, asm)]
 #![no_builtins]
 #![no_std]
-#![feature(alloc)]
 #![feature(panic_info_message)]
 
 #![feature(alloc_error_handler)]
@@ -17,7 +16,6 @@ extern crate bitflags;
 extern crate alloc;
 extern crate spin;
 extern crate elf;
-extern crate hashmap_core;
 
 pub mod lang_items;
 
@@ -77,6 +75,8 @@ pub unsafe extern "C" fn kmain()
     //println!("Kernel ends at {}\n", kernel_end_addr);
 
 
+    //TODO: Write protect the kernel image
+    //TODO: Consider how rust allocs on the stack
     memory::init();
 
 
@@ -94,30 +94,14 @@ pub unsafe extern "C" fn kmain()
     //TODO: How are stacks managed for threads with no Process?
     //TODO: How do we pass in the function we want to run?
 
-    // let thread1 = thread::create_thread(thread::idle::idle1, None);
-    // thread::start_thread(thread1);
+    let thread1 = thread::create_thread(thread::idle::idle1, None);
+    thread::start_thread(thread1);
 
-    // let thread2 = thread::create_thread(thread::idle::idle2, None);
-    // thread::start_thread(thread2);
-
-    for _x in 0..1000000000 as u64 {
-        asm!("nop" :::: "volatile"); 
-    }
-    reboot::reboot();
-    // //TODO: This should be moved into a "thread context bring up" routine
-    // arm::set_thread_id(idle_thread);
+    let thread2 = thread::create_thread(thread::idle::idle2, None);
+    thread::start_thread(thread2);
 
 
-    // let idle_thread = thread::create_thread(thread::idle::idle3, None);
-    // thread::start_thread(idle_thread);
-
-    //TODO: We could create some more threads
-
-
-    //This will bottom out into a RET
-    // scheduler::switch_to_next();
-
-    //thread::switch_to_initial(thread1);
+    thread::switch_to_initial(thread1);
 
     //let mut root_process = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
     //rootprocess::boot_root_process(root_process);

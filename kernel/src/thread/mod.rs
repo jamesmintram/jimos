@@ -25,7 +25,7 @@ struct ThreadSystem {
 
 impl ThreadSystem {
     pub fn new() -> ThreadSystem {
-        //println!("New thread sys");
+        //TODO: Fix this as we use loads of stack
         return ThreadSystem {
             threads: [Default::default();16],
             current_id: 0,

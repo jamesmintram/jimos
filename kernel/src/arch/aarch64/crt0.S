@@ -4,8 +4,8 @@
 enter_virtual_addressing:
 
   // load stack pointer (on 32bit)
-  adrp	x2, __cpu0_stack_end
-  add	  x2, x2, #:lo12:__cpu0_stack_end
+  adrp	x2, __kernel_stack_end
+  add	  x2, x2, #:lo12:__kernel_stack_end
   
   MSR SPSel, #1
   mov	  sp, x2

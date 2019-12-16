@@ -1,5 +1,5 @@
 
 #!/bin/bash
 
-aarch64-none-elf-gdb --command="$(dirname "$0")/jlink_attach.gdb"
+gdb --command="$(dirname "$0")/qemu_attach.gdb"
 

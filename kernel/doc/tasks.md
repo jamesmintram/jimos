@@ -1,3 +1,6 @@
+Set memory protection for everything up to BSS
+Stick a write protected page between stack and BSS
+
 Add a reboot handler inside of the panic FN - reset when P pressed
 See why I cannot create 128 thread blocks (memory crash)
 Refactor to thread model

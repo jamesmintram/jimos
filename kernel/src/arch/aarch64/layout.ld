@@ -15,6 +15,7 @@ SECTIONS {
   kernel_first_page = kernel_va_base + kernel_physical_start;
 
   /* Seems to give me what I need*/
+  /*kernel_end = __kernel_stack_end;*/
   kernel_end = LOADADDR(.bss) + SIZEOF(.bss);
 
   /*-----------------------------------------------*/
@@ -82,11 +83,11 @@ SECTIONS {
 
     __bss_end = ALIGN(0x10);
 
-    . = ALIGN(0x10);
-    . += 0x10000;
-    __cpu0_stack_end = .;
-
+    /*TODO: Shouldn't really be sticking the stack here*/
+    __kernel_stack_start = ALIGN(kernel_page_size);
+    . += 0x100000;
     . = ALIGN(kernel_page_size);
+    __kernel_stack_end = .;
   }
 
    __bss_dwords = (__bss_end - __bss_start) >> 3;
