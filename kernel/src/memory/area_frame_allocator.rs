@@ -80,13 +80,13 @@ impl AreaFrameAllocator {
             len: adjusted_page_frame_count,
         };
 
-        println!("Allocator\n",);
-        println!("\tFirst page frame: {}\n", allocator.next_free_frame.number);
-        println!("\tLast page frame: {}\n",  allocator.last_frame.number);
-        println!("\tPage frame count: {}\n", adjusted_page_frame_count);
+        // println!("Allocator\n",);
+        // println!("\tFirst page frame: {}\n", allocator.next_free_frame.number);
+        // println!("\tLast page frame: {}\n",  allocator.last_frame.number);
+        // println!("\tPage frame count: {}\n", adjusted_page_frame_count);
 
-        println!("\tAllocator size (bytes): {}\n", allocator_size);
-        println!("\tAllocator size (page frames): {}\n", allocator_size / memory::PAGE_SIZE);
+        // println!("\tAllocator size (bytes): {}\n", allocator_size);
+        // println!("\tAllocator size (page frames): {}\n", allocator_size / memory::PAGE_SIZE);
 
         allocator
     }   

@@ -4,7 +4,7 @@ use process;
 
 pub fn boot_root_process (mut process: process::Process ) {
     //let stack_range = process.address_space.get_segment_range(process.stack);
-    let text_range = process.address_space.get_segment_range(process.text);
+    let _text_range = process.address_space.get_segment_range(process.text);
 
     // Prepare our frame structure for a later call to return_to_userspace
     {

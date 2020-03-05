@@ -176,7 +176,7 @@ pub fn switch_process(next_process: &mut Process)
 {
     println!("Switching process");
     //Set the thread pointer to this
-    let process_ptr = (next_process as *const _) as usize;
+    let _process_ptr = (next_process as *const _) as usize;
     // arm::set_thread_ptr(process_ptr);
 
     //Switch the page table

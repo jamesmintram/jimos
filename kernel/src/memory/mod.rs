@@ -62,6 +62,8 @@ pub fn init() {
     //TODO: Read this into some sort of immutable system config that we can access
     //TODO: Add the KernelBSS ranges to this system config
     
+    println!("Init the memory system");
+
     let heap_start_addr =  unsafe{(&__heap_phys_start as *const _) as usize};
 
 

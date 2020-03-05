@@ -98,7 +98,7 @@ impl HeapSlabAllocator
         }
     }
 
-    fn object_size_to_allocator(&mut self, size: ObjectSize) -> &mut HeapAllocator 
+    fn object_size_to_allocator(&mut self, size: ObjectSize) -> &mut dyn HeapAllocator 
     {
         match size {
             ObjectSize::Size64Bytes => &mut self.slab64,

@@ -72,7 +72,7 @@ impl PagedVector
     {
         let first_page = PagedVectorPage::new();
 
-        println!("PagedVector created, {} descriptors per Page\n", first_page.max());
+        // println!("PagedVector created, {} descriptors per Page\n", first_page.max());
 
         return PagedVector{
             head: first_page,

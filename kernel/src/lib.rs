@@ -70,9 +70,10 @@ pub unsafe extern "C" fn kmain()
 
     println!("UART init");
 
-    arm::print_cache_info();
+    // arm::print_cache_info();
 
-    println!("Building kernel page tables\n");
+    println!("Building kernel page tables");
+    
     //TODO: Need to build a page table which is the same as what we generate in ASM
     //0 - kernel_start           :: unmapped
     //kernel_start -> bss start  :: read only
@@ -138,7 +139,7 @@ pub unsafe extern "C" fn kmain()
 
     //TODO: Consider how rust allocs on the stack
     memory::init();
-
+    thread::init();
 
 
     //test::heap();
@@ -162,7 +163,7 @@ pub unsafe extern "C" fn kmain()
     thread::start_thread(thread2);
 
 
-    thread::switch_to_initial(thread1);
+    // thread::switch_to_initial(thread1);
 
     //let mut root_process = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
     //rootprocess::boot_root_process(root_process);

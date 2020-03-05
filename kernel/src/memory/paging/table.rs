@@ -52,7 +52,7 @@ impl<L> Table<L> where L: HierarchicalLevel {
     pub fn next_table_address(&self, index: usize) -> Option<usize> {
         let entry_flags = self[index].flags();
 
-        if entry_flags.contains(PRESENT) { 
+        if entry_flags.contains(EntryFlags::PRESENT) { 
             let table_address = self[index].test() & memory::PAGE_MASK;
             let kernel_address = physical_to_kernel(table_address);
 
@@ -84,7 +84,7 @@ impl<L> Table<L> where L: HierarchicalLevel {
             let frame = kalloc::alloc_frame(); 
             
             self.entries[index]
-                .set(frame, PRESENT | TABLE_DESCRIPTOR);
+                .set(frame, EntryFlags::PRESENT | EntryFlags::TABLE_DESCRIPTOR);
 
             self.next_table_mut(index)
                 .unwrap()

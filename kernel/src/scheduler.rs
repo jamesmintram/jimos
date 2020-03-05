@@ -2,8 +2,6 @@ use thread::{ThreadId};
 use thread;
 use spin::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use arch::aarch64::arm;
-
 
 struct SchedulerSystem {
     pub current_id: ThreadId,

@@ -19,15 +19,17 @@ struct Thread {
 }
 
 struct ThreadSystem {
-    pub threads: [Thread;16],
+    pub threads: [Thread;128],
     pub current_id: usize,
 }
 
 impl ThreadSystem {
     pub fn new() -> ThreadSystem {
         //TODO: Fix this as we use loads of stack
+        //TODO: So this needs to exist as a static block of memory OR as something KALLOC'd
+        //TODO: There can be only 1 thread system
         return ThreadSystem {
-            threads: [Default::default();16],
+            threads: [Default::default();128],
             current_id: 0,
         }
     }
@@ -36,7 +38,7 @@ impl ThreadSystem {
         where F: Fn(&mut Thread) -> ()
     {
         let kern_stack_frame = memory::kalloc::alloc_frame();
-        let kernel_stack_bottom = memory::physical_to_kernel(kern_stack_frame.start_address());
+        let _kernel_stack_bottom = memory::physical_to_kernel(kern_stack_frame.start_address());
         let kernel_stack_top = memory::physical_to_kernel(kern_stack_frame.end_address());
 
 
@@ -52,9 +54,9 @@ impl ThreadSystem {
 
             //NOTE: Could fail? If so, return invalid ThreadId + free resources
             init(&mut new_thread);
-            println!("TCB:  {:X} {:?}", 
-                &new_thread.arch_tb as *const _ as usize, 
-                new_thread.arch_tb);
+            // println!("TCB:  {:X} {:?}", 
+            //     &new_thread.arch_tb as *const _ as usize, 
+            //     new_thread.arch_tb);
         }
         
         new_thread_id
@@ -94,6 +96,10 @@ fn thread_sys() -> RwLockReadGuard<'static, ThreadSystem> {
 }
 fn thread_sys_mut() -> RwLockWriteGuard<'static, ThreadSystem> {
     THREAD_SYS.call_once(init_thread_sys).write()
+}
+
+pub fn init() {
+    println!("Init the thread system");
 }
 
 pub type ThreadId = usize;

@@ -1,5 +1,4 @@
 use super::frame::TrapFrame;
-use arch::aarch64::arm;
 
 use thread;
 
@@ -245,8 +244,8 @@ pub fn cache_setup()
 pub fn print_cache_info()
 {
     unsafe {
-        println!("DCache size: {}\n", D_CACHE_LINE_SIZE);
-        println!("ICache size: {}\n", I_CACHE_LINE_SIZE);
+        println!("DCache size: {}", D_CACHE_LINE_SIZE);
+        println!("ICache size: {}", I_CACHE_LINE_SIZE);
     }
 }
 

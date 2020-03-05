@@ -78,10 +78,13 @@ pub struct FatComputed
     total_clusters: u16,
 }
 
+// Document the process for creating fat32 images
+// Print out a directory listing
+// 
 
 fn main() -> io::Result<()>  {
     
-    let file = File::open("test.img")?;
+    let file = File::open("tsmall.img")?;
     let mmap = unsafe { MmapOptions::new().map(&file)? };
 
     let data = &mmap;

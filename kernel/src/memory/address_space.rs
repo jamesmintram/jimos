@@ -137,7 +137,7 @@ impl<'a> AddressSpace<'a>
             page_table, 
             page, 
             frame,
-            paging::entry::RW);
+            paging::entry::EntryFlags::RW);
             //paging::EntryFlags::empty());
  
         return true;

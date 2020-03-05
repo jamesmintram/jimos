@@ -1,10 +1,10 @@
+#![allow(non_camel_case_types)]
+
 use arch::aarch64::frame;
 use arch::aarch64::arm;
 
 use memory::virtual_address;
 use process;
-
-
 
 // ESR - Instruction Fault Status Code
 // -----------------------------------

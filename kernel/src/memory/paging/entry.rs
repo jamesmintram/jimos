@@ -36,7 +36,7 @@ impl Entry {
 
     // Only makes sense in the final table (TODO: Update with proper name from arm doc)
     pub fn pointed_frame(&self) -> Option<Frame> {
-        if self.flags().contains(PRESENT) {
+        if self.flags().contains(EntryFlags::PRESENT) {
             Some(Frame::containing_address(
                 self.0 as usize & ADDRESS_MASK
             ))

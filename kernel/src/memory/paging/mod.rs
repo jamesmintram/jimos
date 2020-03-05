@@ -90,7 +90,7 @@ pub fn add_page(
     //assert!(p1[page.p1_index()].is_unused());
 
     let zero_frame = Frame{number: 0};
-    p1[page.p1_index()].set(zero_frame, flags | ACCESS | TABLE_DESCRIPTOR);
+    p1[page.p1_index()].set(zero_frame, flags | EntryFlags::ACCESS | EntryFlags::TABLE_DESCRIPTOR);
 }
 
 pub fn map_to(
@@ -112,11 +112,11 @@ pub fn map_to(
     //assert!(p1[page.p1_index()].is_unused());
     
     //print!("VA [P1 Index: {}]\n", page.p1_index());
-    let new_flags = flags | PRESENT | ACCESS | TABLE_DESCRIPTOR;
+    let new_flags = flags | EntryFlags::PRESENT | EntryFlags::ACCESS | EntryFlags::TABLE_DESCRIPTOR;
     let _new =  (frame.start_address() as u64) | new_flags.bits();
 
 
     //print!("CURRENT: {:X?}\n", p1[page.p1_index()].test());
     //print!("NEW: {:X?}\n", new);
-    p1[page.p1_index()].set(frame, flags | PRESENT | ACCESS | TABLE_DESCRIPTOR);
+    p1[page.p1_index()].set(frame, flags | EntryFlags::PRESENT | EntryFlags::ACCESS | EntryFlags::TABLE_DESCRIPTOR);
 }
