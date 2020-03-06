@@ -3,15 +3,15 @@ use std::str;
 use std::fs::File;
 use memmap::MmapOptions;
 
-use core::mem;
-use core::slice;
+// use core::mem;
+// use core::slice;
 
-pub mod FatDirEntryType {
+pub mod fat_dir_entry_type {
     pub const END: u8 = 0x00;
     pub const UNUSED: u8    = 0xE5;
 }
 
-pub mod FatFileAttributes {
+pub mod fat_file_attributes {
     pub const READ_ONLY: u8 = 0x01;
     pub const HIDDEN: u8    = 0x02;
     pub const SYSTEM: u8    = 0x04;
@@ -22,7 +22,7 @@ pub mod FatFileAttributes {
 }
 
 #[repr(packed)]
-#[derive(Debug)]
+#[derive(Clone,Copy,Debug)]
 pub struct FatFileEntry
 {
     name: [u8;11],
@@ -47,7 +47,7 @@ pub struct FatFileEntry
 
 
 #[repr(packed)]
-#[derive(Debug)]
+#[derive(Clone,Copy,Debug)]
 pub struct FatBootRecord
 {
     magic: [u8;3],      
@@ -94,7 +94,7 @@ fn main() -> io::Result<()>  {
             as *const FatBootRecord;
 
     let header = unsafe{header_ptr.as_ref().unwrap()};
-    let header_size = 512;//mem::size_of::<FatBootRecord>();
+    let _header_size = 512;//mem::size_of::<FatBootRecord>();
 
     // total_root_dir_sectors        
     let root_dir_size = header.num_dir_entries * 32;
@@ -122,8 +122,8 @@ fn main() -> io::Result<()>  {
         total_clusters: 0,        
     };
 
-    println!("{:?}", header);
-    println!("{:?}", computed);
+    println!("{:#?}", header);
+    println!("{:#?}", computed);
 
     println!("-------------------");
 
@@ -141,12 +141,12 @@ fn main() -> io::Result<()>  {
         let first_byte = data[entry_byte];
 
         // Unused dir entry
-        if first_byte == FatDirEntryType::UNUSED {
+        if first_byte == fat_dir_entry_type::UNUSED {
             continue;
         }
 
         // End of Directory
-        if first_byte == FatDirEntryType::END {
+        if first_byte == fat_dir_entry_type::END {
             break;
         }
         
@@ -157,17 +157,17 @@ fn main() -> io::Result<()>  {
         let file_entry = unsafe{file_entry_ptr.as_ref().unwrap()};
 
         // Ignore long file names (for now)
-        if (file_entry.attribute & 0xF) == FatFileAttributes::LONG_FILE_NAME {
+        if (file_entry.attribute & 0xF) == fat_file_attributes::LONG_FILE_NAME {
             continue;
         }
 
-        // println!("File Entry address: {:X}", entry_byte);
-        // println!("File Entry: {:?}", file_entry);
+        println!("File Entry address: {:X}", entry_byte);
+        println!("File Entry: {:?}", file_entry);
    
         // TODO: Make this less picky?
         let file_name = str::from_utf8(&file_entry.name).unwrap();
 
-        if file_entry.attribute & FatFileAttributes::DIRECTORY != 0 
+        if file_entry.attribute & fat_file_attributes::DIRECTORY != 0 
         {
             println!("FolderName: {}", file_name); 
         }
@@ -181,7 +181,7 @@ fn main() -> io::Result<()>  {
         
         //1A800 - for the start of the CHEESE dir entry
 
-        while true {      
+        loop {      
             println!("Cluster index: {:X}", current_cluster_idx);
 
 
