@@ -1,8 +1,8 @@
 use arch::aarch64::arm;
-use arch::aarch64::frame::{TrapFrame, ArchThreadBlock};
+use arch::aarch64::frame::{TrapFrame, ArchThreadBlock, DEFAULT_TRAP_FRAME, DEFAULT_ARCH_THREAD_BLOCK};
 
 use memory;
-use spin::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use spin::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use scheduler;
 
 pub mod idle;
@@ -19,18 +19,26 @@ struct Thread {
     */
 }
 
+const DEFAULT_THREAD: Thread = Thread {
+    id: 0,
+    arch_tb: DEFAULT_ARCH_THREAD_BLOCK,
+    kernel_stack: 0,    
+    frame: DEFAULT_TRAP_FRAME
+};
+
+
 struct ThreadSystem {
-    pub threads: [Thread;128],
+    pub threads: [Thread;4096],
     pub current_id: usize,
 }
 
 impl ThreadSystem {
-    pub fn new() -> ThreadSystem {
+    pub const fn new() -> ThreadSystem {
         //TODO: Fix this as we use loads of stack
         //TODO: So this needs to exist as a static block of memory OR as something KALLOC'd
         //TODO: There can be only 1 thread system
         return ThreadSystem {
-            threads: [Default::default();128],
+            threads: [DEFAULT_THREAD;4096],
             current_id: 0,
         }
     }
@@ -86,17 +94,17 @@ impl ThreadSystem {
     }
 }
 
-static THREAD_SYS: Once<RwLock<ThreadSystem>> = Once::new();
+static THREAD_SYS: RwLock<ThreadSystem> = RwLock::new(ThreadSystem::new());
 
 /// Initialize contexts, called if needed
 fn init_thread_sys() -> RwLock<ThreadSystem> {
     RwLock::new(ThreadSystem::new())
 }
 fn thread_sys() -> RwLockReadGuard<'static, ThreadSystem> {
-    THREAD_SYS.call_once(init_thread_sys).read()
+    THREAD_SYS.read()
 }
 fn thread_sys_mut() -> RwLockWriteGuard<'static, ThreadSystem> {
-    THREAD_SYS.call_once(init_thread_sys).write()
+    THREAD_SYS.write()
 }
 
 pub fn init() {

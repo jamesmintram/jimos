@@ -1,9 +1,21 @@
+MyCPU, MyProcess
+
+
+
 Set memory protection for everything up to BSS
 Stick a write protected page between stack and BSS
 
 Look at using armstub8
 - https://github.com/raspberrypi/tools/blob/master/armstubs/armstub8.S
 
+
+Deadlocks
+- Locks held when context switch
+- Multiple attempts to lock within same callstack
+- Interrupted when a lock is held
+
+
+usbdevice - 
 
 Add a reboot handler inside of the panic FN - reset when P pressed
 See why I cannot create 128 thread blocks (memory crash)

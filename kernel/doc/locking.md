@@ -1,3 +1,7 @@
+Consider:
+- CPU-ID holding the lock
+- Pushing/Popping Interrupt Disable
+
 No SMP
 - Spin locks aren't required, we can just disable pre-emption while the lock is held
 - Preempt/context switch while spin lock is held should panic
