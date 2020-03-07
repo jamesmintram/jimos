@@ -23,7 +23,7 @@ impl SchedulerSystem {
     }
 
     fn switch_to_next(&mut self) -> ThreadId {
-        let current_thread_id = thread::get_thread_id();
+        let current_thread_id = thread::current_thread_id();
 
         //TODO: There is lots more we can do here respect to checking thread statuses
         //TODO: and priorities and other stuff

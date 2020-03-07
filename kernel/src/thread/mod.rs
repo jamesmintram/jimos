@@ -9,6 +9,7 @@ pub mod idle;
 
 #[derive(Default, Clone, Copy)]
 struct Thread {
+    pub pid: usize,
     pub id: usize,
     pub arch_tb: ArchThreadBlock,
     pub kernel_stack: memory::VirtualAddress,
@@ -171,7 +172,7 @@ fn default_trampoline(fn_ptr: u64, fn_param: u64) {
     // println!("fn    {:X}", fn_ptr);
     // println!("Param {}", fn_param);
 
-    println!("Trampoline thread: {}", get_thread_id());
+    println!("Trampoline thread: {}", current_thread_id());
 
     //TODO: This is a hack mess
     let func_ptr_ptr = &fn_ptr as *const u64 as usize;
@@ -190,11 +191,15 @@ fn default_trampoline(fn_ptr: u64, fn_param: u64) {
 
 //-------------------------
 
-pub fn get_thread_id() -> ThreadId
+pub fn current_thread_id() -> ThreadId
 {
     let arch_tb_ptr = arm::get_thread_id() as *mut ArchThreadBlock;
     let arch_tb: &mut ArchThreadBlock = unsafe {&mut *arch_tb_ptr};
     return arch_tb.id;
+}
+
+pub fn get_thread_pid(thread_id: ThreadId) -> usize {
+    thread_sys().get(thread_id).expect("Invalid thread ID").pid
 }
 
 fn get_thread_block_addr(thread_id: ThreadId) -> usize {
@@ -207,7 +212,10 @@ fn get_thread_block_addr(thread_id: ThreadId) -> usize {
 }
 
 pub fn switch_to(next_thread_id: ThreadId) {
-    let current_thread_id = get_thread_id();
+    //TODO: Disable interrupts
+    //TODO: Check that we have nothing holding interrupts off (Spinlocks)
+
+    let current_thread_id = current_thread_id();
 
     // Precondition check
     if current_thread_id == next_thread_id {
@@ -217,12 +225,24 @@ pub fn switch_to(next_thread_id: ThreadId) {
             next_thread_id);
     }
 
+    let current_thread_pid = get_thread_pid(current_thread_id);
+    let next_thread_pid = get_thread_pid(next_thread_id);
+    
+    if current_thread_pid != next_thread_pid {
+        //require a full context switch - invcluding address space etc
+        //switch_address_space(..as)    
+        let process = get_process
+        memory::activate_address_space(&next_process.address_space);
+    }
+
     let current_thread_block_addr = get_thread_block_addr(current_thread_id);
     let next_thread_block_addr = get_thread_block_addr(next_thread_id);
-    
+      
     arm::switch_thread(
         current_thread_block_addr,
         next_thread_block_addr);
+
+    //TODO: Once a switch thread has complete, we can re-enable interrupts
 }
 
 pub fn switch_to_initial(next_thread_id: ThreadId) {

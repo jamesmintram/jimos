@@ -7,6 +7,8 @@ use arch::aarch64::frame::TrapFrame;
 
 pub struct Process<'a>
 {
+    pub pid: usize,
+
     pub address_space: address_space::AddressSpace<'a>,
     pub heap: address_space::AddressSegmentId,
     pub stack: address_space::AddressSegmentId,
@@ -72,6 +74,8 @@ impl<'a> Process<'a>
         let kernel_stack = memory::physical_to_kernel(kern_stack_frame.start_address());
 
         let new_process: Process<'a> = Process{
+            pid: 0,
+            
             heap: head_seg_id,
             stack: stack_seg_id,
             text: text_seg_id,
@@ -186,11 +190,12 @@ pub fn switch_process(next_process: &mut Process)
 //TODO: Fix lifetime hack
 pub fn get_current_process() -> &'static mut Process<'static>
 {
-    let process_ptr_value = arm::get_thread_id();
-    let process_ptr = process_ptr_value as *mut Process;
+    // TODO: We need to read this from the current thread
+    // let process_ptr_value = arm::get_thread_id();
+    // let process_ptr = process_ptr_value as *mut Process;
 
-    //TODO: We need to validate this process address (Debug only maybe?)
+    // //TODO: We need to validate this process address (Debug only maybe?)
 
-    let process: &mut Process = unsafe { &mut *process_ptr };
-    process
+    // let process: &mut Process = unsafe { &mut *process_ptr };
+    // process
 }
