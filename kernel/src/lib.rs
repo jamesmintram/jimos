@@ -157,15 +157,15 @@ pub unsafe extern "C" fn kmain()
     //TODO: How do we pass in the function we want to run?
 
     let proc1 = process::create_process();
+    let proc2 = process::create_process();
 
     let thread1 = thread::create_thread(proc1, thread::idle::idle1, None);
     thread::start_thread(thread1);
 
-    let thread2 = thread::create_thread(proc1, thread::idle::idle2, None);
+    let thread2 = thread::create_thread(proc2, thread::idle::idle2, None);
     thread::start_thread(thread2);
 
-
-    thread::switch_to_initial(thread1);
+    //thread::switch_to_initial(thread1);
 
     //let mut root_process = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
     //rootprocess::boot_root_process(root_process);

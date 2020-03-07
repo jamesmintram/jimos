@@ -5,6 +5,7 @@ use memory;
 use spin::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use scheduler;
 use process::ProcessId;
+use process;
 
 pub mod idle;
 
@@ -246,10 +247,7 @@ pub fn switch_to(next_thread_id: ThreadId) {
     let next_thread_pid = get_thread_pid(next_thread_id);
     
     if current_thread_pid != next_thread_pid {
-        //require a full context switch - invcluding address space etc
-        //switch_address_space(..as)    
-        // let process = get_process
-        // memory::activate_address_space(&next_process.address_space);
+        process::activate_address_space(next_thread_pid);
     }
 
     let current_thread_block_addr = get_thread_block_addr(current_thread_id);

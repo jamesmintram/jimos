@@ -5,7 +5,7 @@ use alloc::sync::Arc;
 use arch::aarch64::arm;
 use spin::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub struct ProcessId(pub usize);
 
 pub struct Process<'a>
@@ -134,6 +134,13 @@ impl ProcessSystem<'_> {
         new_process_id
     }
 
+    fn with<F>(&self, pid: ProcessId, to_call: F) 
+        where F: Fn(&Process) -> ()
+    {
+        let new_process = &self.processes[pid.0];
+        to_call(new_process);
+    }
+
     pub const fn new() -> ProcessSystem<'static> {
         return ProcessSystem {
             processes: [DEFAULT_PROCESS;1024],   //QUESTION: Does this ensure space is allocated?
@@ -155,6 +162,15 @@ pub fn create_process() -> ProcessId
     process_sys_mut().create()
 }
 
+
+pub fn activate_address_space(pid: ProcessId) 
+{
+    process_sys().with(pid, |process| {
+        address_space::with(&process.address_space, |address_space| {
+            memory::activate_address_space(address_space);
+        });
+    });
+}
 
 // pub fn resume_current_process()
 // {
