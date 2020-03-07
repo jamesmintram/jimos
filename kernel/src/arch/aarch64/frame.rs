@@ -8,8 +8,19 @@ pub struct TrapFrame {
     pub tf_elr:     u64,       //16
     pub tf_spsr:    u32,       //24
     pub tf_esr:     u32,       //28
-    pub tf_x:       [u64; 30], //32
+    pub tf_x:       [u64; 30], //32    
 }
+
+pub const DEFAULT_TRAP_FRAME: TrapFrame = TrapFrame {
+    tf_sp: 0,
+    tf_lr: 0,
+    tf_elr: 0, 
+    tf_spsr: 0,
+    tf_esr: 0,
+    tf_x: [0;30]
+};
+
+
 
 #[allow(dead_code)]
 #[repr(packed)]
@@ -18,6 +29,11 @@ pub struct ArchThreadBlock {
     pub id: usize,
     pub sp: usize,
 }
+
+pub const DEFAULT_ARCH_THREAD_BLOCK: ArchThreadBlock = ArchThreadBlock {
+    id: 0,
+    sp: 0,
+};
 
 impl Default for TrapFrame {
     fn default() -> TrapFrame {

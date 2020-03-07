@@ -4,18 +4,21 @@ use memory::FrameAllocator;
 
 pub fn alloc_frames(frame_count: usize) -> (Frame, Frame)
 {
-    let mut lock = unsafe{memory::KERNEL_FRAME_ALLOCATOR.lock()};
-    if let Some(ref mut allocator) = *lock 
-    {    
-        let start = allocator
-            .allocate_frames(frame_count)
-            .expect("No more darta");
+    let mut lock = unsafe{memory::KERNEL_FRAME_ALLOCATOR.try_lock()};
+    match lock {
+        Some(locked_allocator) =>
+        {    
+            let ref mut allocator = *locked_allocator;
+            let start = allocator
+                .allocate_frames(frame_count)
+                .expect("No more darta");
 
-        let end = Frame{number: start.number + frame_count};
+            let end = Frame{number: start.number + frame_count};
 
-        return (start, end)
-    }
-    panic!()
+            return (start, end)
+        }
+        None => panic!("Failed to acquire KERNEL_FRAME_ALLOCATOR lock")
+    };
 }
 
 pub fn alloc_frame() -> Frame
