@@ -4,6 +4,10 @@ use memory;
 use memory::paging;
 use memory::paging::table;
 
+use alloc::sync::Arc;
+use spin::{RwLock};
+
+#[derive(Clone,Copy)]
 struct AddressSegment
 {
     range: AddressRange,
@@ -56,9 +60,7 @@ pub struct AddressSegmentDesc
     pub range: AddressRange,
 }
 
-#[derive(Clone, Copy)]
-pub struct AddressSegmentId(usize);
-
+pub struct AddressSegmentId(pub usize);
 
 impl<'a> AddressSpace<'a> 
 {
@@ -146,6 +148,32 @@ impl<'a> AddressSpace<'a>
     //TODO: fault()
 }
 
+pub type AddressSpaceRef<'a> = Option<Arc<RwLock<AddressSpace<'a>>>>;
+
+pub fn with_mut<F>(address_space: &AddressSpaceRef, update: F)
+    where F: Fn(&mut AddressSpace) -> () 
+{
+    if let Some(as_ref) = address_space {
+        let mut as_lock = as_ref.as_ref().write();
+
+        update(&mut *as_lock);
+    } else {
+        panic!("Process has no address space");
+    }
+}
+
+pub fn with<F>(address_space: &AddressSpaceRef, to_call: F)
+    where F: Fn(&AddressSpace) -> () 
+{
+    if let Some(as_ref) = address_space {
+        let as_lock = as_ref.as_ref().read();
+
+        to_call(&*as_lock);
+    } else {
+        panic!("Process has no address space");
+    }
+    
+}
 
 //------------------------------------------------------------------------
 //TODO: This should be moved into a mapper

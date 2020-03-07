@@ -4,12 +4,19 @@ use arch::aarch64::frame::{TrapFrame, ArchThreadBlock, DEFAULT_TRAP_FRAME, DEFAU
 use memory;
 use spin::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use scheduler;
+use process::ProcessId;
 
 pub mod idle;
 
-#[derive(Default, Clone, Copy)]
+//TODO: Get the below working - breaks down when "raw" casting etc
+pub type ThreadId = usize;
+// #[derive(Clone, Copy, Eq, PartialEq)]
+// pub struct ThreadId(pub usize);
+
+
+#[derive(Clone, Copy)]
 struct Thread {
-    pub pid: usize,
+    pub pid: ProcessId,
     pub id: usize,
     pub arch_tb: ArchThreadBlock,
     pub kernel_stack: memory::VirtualAddress,
@@ -20,6 +27,7 @@ struct Thread {
 }
 
 const DEFAULT_THREAD: Thread = Thread {
+    pid: ProcessId(0),
     id: 0,
     arch_tb: DEFAULT_ARCH_THREAD_BLOCK,
     kernel_stack: 0,    
@@ -34,22 +42,17 @@ struct ThreadSystem {
 
 impl ThreadSystem {
     pub const fn new() -> ThreadSystem {
-        //TODO: Fix this as we use loads of stack
-        //TODO: So this needs to exist as a static block of memory OR as something KALLOC'd
-        //TODO: There can be only 1 thread system
         return ThreadSystem {
             threads: [DEFAULT_THREAD;4096],
             current_id: 0,
         }
     }
 
-    pub fn create<F>(&mut self, init: F) -> ThreadId
-        where F: Fn(&mut Thread) -> ()
+    pub fn create(&mut self, pid: ProcessId) -> ThreadId
     {
         let kern_stack_frame = memory::kalloc::alloc_frame();
         let _kernel_stack_bottom = memory::physical_to_kernel(kern_stack_frame.start_address());
         let kernel_stack_top = memory::physical_to_kernel(kern_stack_frame.end_address());
-
 
         //TODO: Check we have been able to create required resources - if not, early return
 
@@ -59,15 +62,21 @@ impl ThreadSystem {
         if let Some(mut new_thread) = self.get_mut(self.current_id)
         {
             new_thread.id = new_thread_id;
+            new_thread.pid = pid;
             new_thread.kernel_stack = kernel_stack_top;
-
-            //NOTE: Could fail? If so, return invalid ThreadId + free resources
-            init(&mut new_thread);
-            // println!("TCB:  {:X} {:?}", 
-            //     &new_thread.arch_tb as *const _ as usize, 
-            //     new_thread.arch_tb);
+        } else {
+            panic!("Ran out of threads");
         }
         
+        new_thread_id
+    }
+
+    pub fn create_and_update<F>(&mut self, pid: ProcessId, init: F) -> ThreadId
+        where F: Fn(&mut Thread) -> ()
+    {
+        let new_thread_id = self.create(pid);
+
+        init(self.get_mut(new_thread_id).expect("create returned invalid thread"));       
         new_thread_id
     }
 
@@ -97,9 +106,9 @@ impl ThreadSystem {
 static THREAD_SYS: RwLock<ThreadSystem> = RwLock::new(ThreadSystem::new());
 
 /// Initialize contexts, called if needed
-fn init_thread_sys() -> RwLock<ThreadSystem> {
-    RwLock::new(ThreadSystem::new())
-}
+// fn init_thread_sys() -> RwLock<ThreadSystem> {
+//     RwLock::new(ThreadSystem::new())
+// }
 fn thread_sys() -> RwLockReadGuard<'static, ThreadSystem> {
     THREAD_SYS.read()
 }
@@ -111,13 +120,12 @@ pub fn init() {
     println!("Init the thread system");
 }
 
-pub type ThreadId = usize;
-
 pub type Trampoline = fn(fn_ptr: u64, fn_param: u64) -> ();
 pub type ThreadFn = fn(param: u64) -> ();
 
 
 pub fn create_thread(
+    pid: ProcessId,
     thread_fn: ThreadFn,
     trampoline: Option<Trampoline>) -> ThreadId
 {
@@ -126,7 +134,8 @@ pub fn create_thread(
         None => default_trampoline
     };
 
-    thread_sys_mut().create(
+    thread_sys_mut().create_and_update(
+        pid,
         |new_thread| {
             // let frame = &mut new_thread.frame;
 
@@ -206,7 +215,7 @@ pub fn current_thread_id() -> ThreadId
     return arch_tb.id;
 }
 
-pub fn get_thread_pid(thread_id: ThreadId) -> usize {
+pub fn get_thread_pid(thread_id: ThreadId) -> ProcessId {
     thread_sys().get(thread_id).expect("Invalid thread ID").pid
 }
 
@@ -239,8 +248,8 @@ pub fn switch_to(next_thread_id: ThreadId) {
     if current_thread_pid != next_thread_pid {
         //require a full context switch - invcluding address space etc
         //switch_address_space(..as)    
-        let process = get_process
-        memory::activate_address_space(&next_process.address_space);
+        // let process = get_process
+        // memory::activate_address_space(&next_process.address_space);
     }
 
     let current_thread_block_addr = get_thread_block_addr(current_thread_id);

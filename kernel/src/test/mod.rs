@@ -1,5 +1,6 @@
 use memory; 
 use thread;
+use process::ProcessId;
 
 pub fn heap() 
 {
@@ -25,6 +26,7 @@ pub fn deadlock()
 pub fn thread_custom_trampoline()
 {
     let idle_thread = thread::create_thread(
+        ProcessId(0),
         |_fn_param| {},
         Some(|_fn_ptr, _fn_param|{
             println!("My own tam tam tamborine");

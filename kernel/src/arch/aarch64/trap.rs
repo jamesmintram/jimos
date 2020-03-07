@@ -4,7 +4,9 @@ use arch::aarch64::frame;
 use arch::aarch64::arm;
 
 use memory::virtual_address;
+use memory::address_space;
 use process;
+
 
 // ESR - Instruction Fault Status Code
 // -----------------------------------
@@ -164,25 +166,28 @@ fn data_abort(
                     "Fault address: {:?}",
                     address);
 
-                if process.address_space.handle_fault(addr) == false {
-                    if low
-                    {
-                        panic!("Process SEGFAULT");
-                        //TODO: Handle a process segfault
-                        //
-                        //  Set the process status to DEAD
-                        //  Return
-                        //
-                        //  During the "pre-return" check for another process
-                        //  to schedule in
-                        //
+                address_space::with_mut(&process.address_space, |address_space| {
+                    if address_space.handle_fault(addr) == false {
+                        if low
+                        {
+                            panic!("Process SEGFAULT");
+                            //TODO: Handle a process segfault
+                            //
+                            //  Set the process status to DEAD
+                            //  Return
+                            //
+                            //  During the "pre-return" check for another process
+                            //  to schedule in
+                            //
+                        }
+                        else
+                        {
+                            panic!("Unable to satisfy kernel page fault");
+                        }
+    
                     }
-                    else
-                    {
-                        panic!("Unable to satisfy kernel page fault");
-                    }
-
-                }
+                });
+                
                 arm::flush_tlb();
             },
 
