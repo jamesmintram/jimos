@@ -1,14 +1,14 @@
 //extern void sys_yield();
-void yield() {
-    //let mut result: i32 = 0;
+// void yield() {
+//     //let mut result: i32 = 0;
 
-    __asm("svc 0");
-        //"svc 0");
+//     __asm("svc 0");
+//         //"svc 0");
     
-            //:
-            //: "r"(call_id)
-            // /);
-}
+//             //:
+//             //: "r"(call_id)
+//             // /);
+// }
 
 
 void __start() {
@@ -17,8 +17,8 @@ void __start() {
     //let data : *mut usize = addr1 as *mut usize;
 
     //TODO: GET WORKING ON HARDWARE    
-    *ptr = 1024;
-    yield();
+    // *ptr = 1024;
+    //yield();
     for(;;) {
 
     }

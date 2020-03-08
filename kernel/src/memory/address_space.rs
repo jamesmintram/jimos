@@ -166,7 +166,7 @@ impl<'a> AddressSpace<'a>
                 page_table, 
                 page, 
                 frame,
-                paging::entry::EntryFlags::RW);
+                paging::entry::EntryFlags::RO);
         }
         
         return true;

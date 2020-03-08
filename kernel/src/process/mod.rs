@@ -199,24 +199,23 @@ pub fn exec(pid: ProcessId, elf: &elf::Elf) //TODO: Pass in an "image" to execut
                     //          and would not be demand paged in on PF
                     address_space.map_range(DEFAULT_TEXT_BASE, data.len());
 
-                    println!("Phys: {:X}", 
-                        memory::virtual_to_physical(
+                    println!("Kernel: {:X}", 
+                        memory::as_to_kernel(
                             address_space, 
                             DEFAULT_TEXT_BASE).unwrap());
 
                     // let dest = section.addr as *mut u8;
                     //TODO: 
-                    let dest = memory::virtual_to_physical(
+                    let dest = memory::as_to_kernel(
                         address_space, 
                         DEFAULT_TEXT_BASE).unwrap() as *mut u8;
 
-                    println!("Copy data");
+                    println!("Copy data: {:X}", dest as usize);
                     for i in 0..data.len() {
                         //HACK: Copy executable data in RAM
-                        // unsafe {
-                        //     *dest.offset(i as isize) = data[i];
-                        // }
-
+                        unsafe {
+                             *dest.offset(i as isize) = data[i];
+                        }
                     }
                 }
             }

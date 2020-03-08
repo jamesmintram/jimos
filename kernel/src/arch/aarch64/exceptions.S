@@ -247,7 +247,7 @@ _initial_thread_start:
 
   mov x11, xzr
   mov x12, xzr
-	ldp	w11, w12, [x1, #(TF_SPSR)]
+	ldp	w11, w12, [x0, #(TF_SPSR)]
 
 	msr	spsr_el1, x11
 	msr	esr_el1, x12

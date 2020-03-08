@@ -10,6 +10,7 @@ bitflags! {
         const PRESENT           = 1 << 0;
         const TABLE_DESCRIPTOR  = 1 << 1;
         const ACCESS            = 1 << 10;
+        const RO                = 3 << 7;
         const RW                = 1 << 6;
     }
 }

@@ -1,6 +1,8 @@
+Fix on demand paging
+Why is the C program not being laid out correctly?
+Need a simple mprotect API for mapping pages
+
 MyCPU, MyProcess
-
-
 
 Set memory protection for everything up to BSS
 Stick a write protected page between stack and BSS
@@ -14,17 +16,17 @@ Deadlocks
 - Multiple attempts to lock within same callstack
 - Interrupted when a lock is held
 
-
 usbdevice - 
 
-Add a reboot handler inside of the panic FN - reset when P pressed
-See why I cannot create 128 thread blocks (memory crash)
-Refactor to thread model
+* See why I cannot create 128 thread blocks (memory crash)
+* Refactor to thread model
 
-Threads should use their own address spaces
-- Switching thread should switch out page tables
+* Threads should use their own address spaces
+** Switching thread should switch out page tables
 
 Re-test loading an elf + running QEMU
+- Should run in EL1
+-- Test, program should have its own counter that increments (using yield + stack)
 - Bundle elf into the kernel image (So we can load it over ethernet)
 
 Drop process to EL0
@@ -33,7 +35,7 @@ Drop process to EL0
 Switch thread from the C/Elf process
 - Requires a yield syscall
 
-
+Add a reboot handler inside of the panic FN - reset when P pressed
 
 
 Frame Allocator 

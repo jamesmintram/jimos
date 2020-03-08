@@ -137,6 +137,21 @@ pub fn virtual_to_physical(
      virtual_address)
 }
 
+pub fn as_to_kernel(
+    address_space: &address_space::AddressSpace, 
+    virtual_address: VirtualAddress) -> Option<VirtualAddress>
+{
+    if let Some(paddr) = virtual_to_physical_pt(
+        address_space.page_table,
+        virtual_address) 
+    {
+        Some(physical_to_kernel(paddr))
+    } else {
+        None
+    }
+}
+
+
 pub fn activate_address_space(address_space: &address_space::AddressSpace) 
 {
     //TODO: Do we need an ASID? If so, get one. 
@@ -146,6 +161,7 @@ pub fn activate_address_space(address_space: &address_space::AddressSpace)
     let as_table_address = as_table_ptr as usize;
     let as_physical_table_address = memory::kernel_to_physical(as_table_address);
 
+    println!("Activating page table: {:X}", as_physical_table_address);
     arm::set_ttbr0_el1(as_physical_table_address);
     arm::flush_tlb();
 }
