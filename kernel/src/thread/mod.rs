@@ -127,7 +127,8 @@ pub type ThreadFn = fn(param: u64) -> ();
 
 pub fn create_thread(
     pid: ProcessId,
-    thread_fn: ThreadFn,
+    // thread_fn: ThreadFn,
+    thread_fn: usize,
     trampoline: Option<Trampoline>) -> ThreadId
 {
     let trampoline_fn = match trampoline {
@@ -247,6 +248,7 @@ pub fn switch_to(next_thread_id: ThreadId) {
     let next_thread_pid = get_thread_pid(next_thread_id);
     
     if current_thread_pid != next_thread_pid {
+        println!("Switching to new PID");
         process::activate_address_space(next_thread_pid);
     }
 
@@ -265,6 +267,9 @@ pub fn switch_to_initial(next_thread_id: ThreadId) {
 
     println!("Switch initial");
     println!("SwitchToInitialProcess:frame_addr {:X}", next_thread_block_addr);
+
+    let next_thread_pid = get_thread_pid(next_thread_id);
+    process::activate_address_space(next_thread_pid);
 
     arm::switch_to_initial(
         next_thread_block_addr);

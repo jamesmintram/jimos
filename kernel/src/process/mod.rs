@@ -5,6 +5,8 @@ use alloc::sync::Arc;
 use arch::aarch64::arm;
 use spin::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
+use thread;
+
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub struct ProcessId(pub usize);
 
@@ -14,7 +16,7 @@ pub struct Process<'a>
 
     pub address_space: address_space::AddressSpaceRef<'a>,
     pub heap: address_space::AddressSegmentId,
-    pub stack: address_space::AddressSegmentId,
+    pub stack: address_space::AddressSegmentId, //TODO: Remove this - there is 1 stack per thread
     pub text: address_space::AddressSegmentId,
 
 
@@ -144,7 +146,7 @@ impl ProcessSystem<'_> {
     pub const fn new() -> ProcessSystem<'static> {
         return ProcessSystem {
             processes: [DEFAULT_PROCESS;1024],   //QUESTION: Does this ensure space is allocated?
-            current_id: 0,
+            current_id: 1,
         }
     }
 }
@@ -219,6 +221,10 @@ pub fn exec(pid: ProcessId, elf: &elf::Elf) //TODO: Pass in an "image" to execut
                 }
             }
         });
+
+        let process_thread = thread::create_thread(pid, DEFAULT_TEXT_BASE, None);
+        thread::start_thread(process_thread);
+        thread::switch_to_initial(process_thread);
     });
 }
 
