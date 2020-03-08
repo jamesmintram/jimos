@@ -119,13 +119,22 @@ pub fn physical_to_kernel(
     return physical_address | KERNEL_ADDRESS_START;
 }
 
-pub fn virtual_to_physical(
+pub fn virtual_to_physical_pt(
     page_table: &Table<Level4>, 
     virtual_address: VirtualAddress) -> Option<PhysicalAddress>
 {
      let offset = virtual_address % PAGE_SIZE;
      translate_page(page_table, Page::containing_address(virtual_address))
          .map(|frame| frame.number * PAGE_SIZE + offset)
+}
+
+pub fn virtual_to_physical(
+    address_space: &address_space::AddressSpace, 
+    virtual_address: VirtualAddress) -> Option<PhysicalAddress>
+{
+    virtual_to_physical_pt(
+     address_space.page_table,
+     virtual_address)
 }
 
 pub fn activate_address_space(address_space: &address_space::AddressSpace) 

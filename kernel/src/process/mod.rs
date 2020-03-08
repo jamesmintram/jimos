@@ -162,15 +162,66 @@ pub fn create_process() -> ProcessId
     process_sys_mut().create()
 }
 
+fn with<F>(pid: ProcessId, to_call: F) 
+        where F: Fn(&Process) -> ()
+{
+    let new_process = &process_sys().processes[pid.0];
+    to_call(new_process);
+}
+
 
 pub fn activate_address_space(pid: ProcessId) 
 {
-    process_sys().with(pid, |process| {
+    with(pid, |process| {
         address_space::with(&process.address_space, |address_space| {
             memory::activate_address_space(address_space);
         });
     });
 }
+
+
+pub fn exec(pid: ProcessId, elf: &elf::Elf) //TODO: Pass in an "image" to execute
+{
+    println!("Exec process");
+    with(pid, |process| {
+        address_space::with_mut(&process.address_space, |address_space| {
+            
+            for section in elf.sections_iter()
+            {
+                println!("Section type: {}", section.section_type);
+                if section.section_type == 1  && section.addr == DEFAULT_TEXT_BASE {
+                    let data = elf.get_section_data(section).unwrap();
+                    
+                    //Map in the pages required
+                    //WARNING: In the future this data could get paged out
+                    //          and would not be demand paged in on PF
+                    address_space.map_range(DEFAULT_TEXT_BASE, data.len());
+
+                    println!("Phys: {:X}", 
+                        memory::virtual_to_physical(
+                            address_space, 
+                            DEFAULT_TEXT_BASE).unwrap());
+
+                    // let dest = section.addr as *mut u8;
+                    //TODO: 
+                    let dest = memory::virtual_to_physical(
+                        address_space, 
+                        DEFAULT_TEXT_BASE).unwrap() as *mut u8;
+
+                    println!("Copy data");
+                    for i in 0..data.len() {
+                        //HACK: Copy executable data in RAM
+                        // unsafe {
+                        //     *dest.offset(i as isize) = data[i];
+                        // }
+
+                    }
+                }
+            }
+        });
+    });
+}
+
 
 // pub fn resume_current_process()
 // {

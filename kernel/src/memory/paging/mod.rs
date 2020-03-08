@@ -63,7 +63,7 @@ pub fn unmap<A>(
     page: Page)
         where A: FrameAllocator
 {
-    assert!(memory::virtual_to_physical(page_table, page.start_address()).is_some());
+    assert!(memory::virtual_to_physical_pt(page_table, page.start_address()).is_some());
 
     let p1 = page_table
                  .next_table_mut(page.p4_index())

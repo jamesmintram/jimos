@@ -41,7 +41,7 @@ mod test;
 
 //use memory::LockedAreaFrameAllocator;
 use memory::slab_allocator::LockedSlabHeap;
-
+use core::slice;
 
 //Temp
 use arch::aarch64::arm;
@@ -137,24 +137,19 @@ pub unsafe extern "C" fn kmain()
     }
 */
 
-    //TODO: Consider how rust allocs on the stack
     memory::init();
     thread::init();
 
 
-    //test::heap();
-    //test::deadlock();
-    //test::thread_custom_trampoline();
-
-    //TODO: Get inside a thread context
-    //thread::create_first_thread();
-    //thread::switch_to_first_thread(first_thread_id)
-    //     This just sets the correct CPU registers
-
-    //TODO: Create and schedule another thread
-    //TODO: How are stacks managed for threads with no Process?
-
-    //TODO: How do we pass in the function we want to run?
+    //TODO: Get inside a thread context (need a root process too?)
+    let phys_addr = 0x3F000000;
+    let kva_addr = memory::physical_to_kernel(phys_addr);
+    let kva_addr_ptr = kva_addr as *const u8;
+    let slice = slice::from_raw_parts(kva_addr_ptr, 1024 * 128);
+    let elf = elf::Elf::from_data(&slice).ok().unwrap();
+    
+    let proc_elf = process::create_process();
+    process::exec(proc_elf, &elf);
 
     let proc1 = process::create_process();
     let proc2 = process::create_process();
@@ -165,10 +160,10 @@ pub unsafe extern "C" fn kmain()
     let thread2 = thread::create_thread(proc2, thread::idle::idle2, None);
     thread::start_thread(thread2);
 
-    let thread3 = thread::create_thread(proc2, thread::idle::idle3, None);
-    thread::start_thread(thread3);
+    // let thread3 = thread::create_thread(proc2, thread::idle::idle3, None);
+    // thread::start_thread(thread3);
 
-    thread::switch_to_initial(thread1);
+    // thread::switch_to_initial(thread1);
 
     //let mut root_process = process::Process::new(&KERNEL_FRAME_ALLOCATOR);
     //rootprocess::boot_root_process(root_process);

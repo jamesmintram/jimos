@@ -144,6 +144,33 @@ impl<'a> AddressSpace<'a>
  
         return true;
     }
+
+    pub fn map_range(&mut self, virtual_address: usize, size: usize) -> bool
+    {
+        if self.contains_address(virtual_address) == false 
+        {
+            return false;
+        }
+        //TODO: This should come from the ANON HEAP instead of the KERNEL HEAP
+        //      but that config should come in through the Segment Mapper desc
+        let page_table = &mut self.page_table;
+        let page_count = 10;//(size + PAGE_SIZE) / PAGE_SIZE;
+
+        for page_id in 0 .. page_count {
+            let page_va = virtual_address + (page_id << memory::PAGE_SHIFT);
+            let page = paging::Page::containing_address(page_va);
+            let frame = memory::kalloc::alloc_frame();
+            
+            //TODO: What if VA is already mapped to a page frame?
+            memory::paging::map_to(
+                page_table, 
+                page, 
+                frame,
+                paging::entry::EntryFlags::RW);
+        }
+        
+        return true;
+    }
     //TODO: remove_segment()
     //TODO: fault()
 }
