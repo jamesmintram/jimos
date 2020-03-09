@@ -149,7 +149,8 @@ pub unsafe extern "C" fn kmain()
     let elf = elf::Elf::from_data(&slice).ok().unwrap();
     
     let proc_elf = process::create_process();
-    process::exec(proc_elf, &elf);
+    let process_thread = process::exec(proc_elf, &elf);
+    thread::switch_to_initial(process_thread); //Deadlock from here
 
     // let proc1 = process::create_process();
     // let proc2 = process::create_process();

@@ -6,6 +6,7 @@ use arch::aarch64::arm;
 use memory::virtual_address;
 use memory::address_space;
 use process;
+use thread;
 
 
 // ESR - Instruction Fault Status Code
@@ -214,23 +215,26 @@ pub unsafe extern "C" fn do_el1h_sync(
 {
     let frame = &*frame_ptr;
     let exception = exception_from_esr(frame.tf_esr);
-    let process = process::get_current_process();
 
-    match exception {
-        //TODO: Match on all data aborts
-        Exception::DATA_ABORT => {
-            let far = arm::read_far_el1();
-            data_abort(frame, process, far, false);
-        },
-        Exception::DATA_ABORT_L => {
-            let far = arm::read_far_el1();
-            data_abort(frame, process, far, true);
-        },
-        _ => {
-            // arm::dump_frame(&*frame_ptr);
-            panic!("Unhandled Exception: {:?}", exception);
+    let pid = thread::get_thread_pid(thread::current_thread_id());
+    process::with_mut(pid, |process| {
+        match exception {
+            //TODO: Match on all data aborts
+            Exception::DATA_ABORT => {
+                let far = arm::read_far_el1();
+                data_abort(frame, process, far, false);
+            },
+            Exception::DATA_ABORT_L => {
+                let far = arm::read_far_el1();
+                data_abort(frame, process, far, true);
+            },
+            _ => {
+                // arm::dump_frame(&*frame_ptr);
+                panic!("Unhandled Exception: {:?}", exception);
+            }
         }
-    }
+    
+    });
 
     //TODO: Run scheduler check (we could get swapped out here)
 
@@ -248,31 +252,37 @@ pub unsafe extern "C" fn do_el0_sync(
 {
     let frame = &*frame_ptr;
     let exception = exception_from_esr(frame.tf_esr);
-    let process = process::get_current_process();
+    println!("Get PID");
+    let pid = thread::get_thread_pid(thread::current_thread_id());
+    println!("Got PID");
 
-    match exception {
-        //TODO: Match on all data aborts
-        Exception::DATA_ABORT => {
-            let far = arm::read_far_el1();
-            data_abort(frame, process, far, false);
-        },
-        Exception::DATA_ABORT_L => {
-            let far = arm::read_far_el1();
-            data_abort(frame, process, far, true);
-        },
-        Exception::INSN_ABORT_L => {
-            let far = arm::read_far_el1();
-            data_abort(frame, process, far, true);
-        },
-        Exception::SVC64 => {
-            panic!("Handle a service call here");
-        },
-        _ => {
-            arm::dump_frame(&*frame_ptr);
-            panic!("Unhandled Exception: {:?}", exception);
+    process::with_mut(pid, |process| {
+        println!("Matching");
+        match exception {
+            //TODO: Match on all data aborts
+            Exception::DATA_ABORT => {
+                let far = arm::read_far_el1();
+                data_abort(frame, process, far, false);
+            },
+            Exception::DATA_ABORT_L => {
+                let far = arm::read_far_el1();
+                data_abort(frame, process, far, true);
+            },
+            Exception::INSN_ABORT_L => {
+                let far = arm::read_far_el1();
+                data_abort(frame, process, far, true);
+            },
+            Exception::SVC64 => {
+                panic!("Handle a service call here");
+            },
+            _ => {
+                arm::dump_frame(&*frame_ptr);
+                panic!("Unhandled Exception: {:?}", exception);
+            }
         }
-    }
+    });
 
+    println!("Exception handled");
     //TODO: Run scheduler check (we could get swapped out here)
 
     //TODO: Fix up the register clobbering memory/mod.rs

@@ -322,10 +322,14 @@ ENTRY(handle_el1h_sync)
   MSR SPSel, #1 // SP_ELn
 
   save_registers 1
-	//ldr	x0, [x18, #PC_CURTHREAD]
+	
+  //TODO: Fix this broken return
 	mov	x0, sp
 	bl	do_el1h_sync
-	restore_registers 1
+
+	mov x0, sp
+  restore_registers 1
+  
   //b exit
 	eret
 END(handle_el1h_sync)

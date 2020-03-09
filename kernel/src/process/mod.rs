@@ -164,13 +164,19 @@ pub fn create_process() -> ProcessId
     process_sys_mut().create()
 }
 
-fn with<F>(pid: ProcessId, to_call: F) 
+pub fn with<F>(pid: ProcessId, to_call: F) 
         where F: Fn(&Process) -> ()
 {
     let new_process = &process_sys().processes[pid.0];
     to_call(new_process);
 }
 
+pub fn with_mut<F>(pid: ProcessId, to_call: F) 
+        where F: Fn(&mut Process) -> ()
+{
+    let new_process = &mut process_sys_mut().processes[pid.0];
+    to_call(new_process);
+}
 
 pub fn activate_address_space(pid: ProcessId) 
 {
@@ -182,9 +188,10 @@ pub fn activate_address_space(pid: ProcessId)
 }
 
 
-pub fn exec(pid: ProcessId, elf: &elf::Elf) //TODO: Pass in an "image" to execute
+pub fn exec(pid: ProcessId, elf: &elf::Elf) -> thread::ThreadId //TODO: Pass in an "image" to execute
 {
     println!("Exec process");
+
     with(pid, |process| {
         address_space::with_mut(&process.address_space, |address_space| {
             
@@ -223,8 +230,10 @@ pub fn exec(pid: ProcessId, elf: &elf::Elf) //TODO: Pass in an "image" to execut
 
         let process_thread = thread::create_thread(pid, DEFAULT_TEXT_BASE, None);
         thread::start_thread(process_thread);
-        thread::switch_to_initial(process_thread);
     });
+
+    //TODO: Fix this hard coded hack
+    return 1;
 }
 
 
@@ -259,15 +268,15 @@ pub fn switch_process(next_process: &mut Process)
     });
 }
 
-//TODO: Fix lifetime hack
-pub fn get_current_process() -> &'static mut Process<'static>
-{
-    //TODO: We need to read this from the current thread
-    let process_ptr_value = arm::get_thread_id();
-    let process_ptr = process_ptr_value as *mut Process;
+// //TODO: Fix lifetime hack
+// pub fn get_current_process() -> &'static mut Process<'static>
+// {
+//     //TODO: We need to read this from the current thread
+//     let process_ptr_value = arm::get_thread_id();
+//     let process_ptr = process_ptr_value as *mut Process;
 
-    //TODO: We need to validate this process address (Debug only maybe?)
+//     //TODO: We need to validate this process address (Debug only maybe?)
 
-    let process: &mut Process = unsafe { &mut *process_ptr };
-    process
-}
+//     let process: &mut Process = unsafe { &mut *process_ptr };
+//     process
+// }

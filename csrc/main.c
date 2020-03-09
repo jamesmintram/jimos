@@ -17,7 +17,7 @@ void __start() {
     //let data : *mut usize = addr1 as *mut usize;
 
     //TODO: GET WORKING ON HARDWARE    
-    // *ptr = 1024;
+    *ptr = 1024;
     //yield();
     for(;;) {
 
